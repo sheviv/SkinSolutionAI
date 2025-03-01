@@ -1,0 +1,77 @@
+/* Professional Medical Styling */
+
+/* Headers */
+h1, h2, h3 {
+    color: #2c3e50;
+    font-family: 'Arial', sans-serif;
+    margin-bottom: 1rem;
+}
+
+/* Main title styling */
+.stTitle {
+    color: #0066cc !important;
+    font-weight: 600 !important;
+    padding-bottom: 1.5rem !important;
+}
+
+/* File uploader */
+.stFileUploader {
+    border: 2px dashed #0066cc;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 20px 0;
+}
+
+/* Button styling */
+.stButton > button {
+    background-color: #0066cc;
+    color: white;
+    border-radius: 5px;
+    padding: 0.5rem 1rem;
+    font-weight: 500;
+}
+
+/* Warning/Disclaimer styling */
+.stAlert {
+    border-radius: 5px;
+    border-left: 5px solid #ff9f1c;
+}
+
+/* Results section */
+.stExpander {
+    border: 1px solid #e0e0e0;
+    border-radius: 5px;
+    margin: 10px 0;
+}
+
+/* Doctor cards */
+.stExpander > div {
+    background-color: #f8f9fa;
+    padding: 1rem;
+    border-radius: 5px;
+}
+
+/* Image captions */
+.caption {
+    font-size: 0.9rem;
+    color: #666;
+    text-align: center;
+    margin-top: 0.5rem;
+}
+
+/* Metrics and analysis results */
+.stMetric {
+    background-color: #007fff;
+    padding: 1rem;
+    border-radius: 5px;
+    border: 1px solid #007fff;
+}
+
+/* Product recommendations */
+.product-card {
+    border: 1px solid #e0e0e0;
+    border-radius: 5px;
+    padding: 1rem;
+    margin: 1rem 0;
+    background-color: white;
+}
