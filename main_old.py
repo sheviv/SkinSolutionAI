@@ -10,7 +10,7 @@ from utils.ai_analysis import get_image_analysis
 from utils.language import get_translation, init_language, change_language, LANGUAGES
 from utils.location import get_user_location_from_ip, get_doctors_in_radius
 from utils.chat import init_chat, start_chat_with_doctor, render_chat_interface
-from utils.database import init_db, User, db
+from utils.database import init_db, User
 from utils.auth import init_auth, register_user, login_user_with_credentials
 from data.products import get_product_recommendations
 from data.doctors import get_nearby_doctors
@@ -34,33 +34,77 @@ init_chat()
 def t(key):
     return get_translation(key)
 
-# Streamlit registration form
-def show_registration_form():
-    st.title("Регистрация")
-    st.write("Пожалуйста, заполните форму ниже для регистрации.")
+# User authentication routes
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
 
-    # Input fields for registration
-    email = st.text_input("Электронная почта")
-    username = st.text_input("Имя пользователя")
-    password = st.text_input("Пароль", type="password")
-    confirm_password = st.text_input("Подтвердите пароль", type="password")
+    if request.method == 'POST':
+        email = request.form.get('email')
+        username = request.form.get('username')
+        password = request.form.get('password')
+        confirm_password = request.form.get('confirm_password')
 
-    # Register button
-    if st.button("Зарегистрироваться"):
         if password != confirm_password:
-            st.error("Пароли не совпадают!")
+            flash('Passwords do not match!', 'error')
+            return render_template('register.html', messages=session.pop('_flashes', []))
+
+        success, message = register_user(email, username, password)
+        if success:
+            flash(message, 'success')
+            return redirect(url_for('login'))
         else:
-            # Call the register_user function from utils.auth
-            try:
-                success, message = register_user(email, username, password)
-                if success:
-                    st.success(message)
-                    st.session_state.registered = True  # Mark user as registered
-                    st.rerun()  # Перезагрузить страницу для отображения основной программы
-                else:
-                    st.error(message)
-            except Exception as e:
-                st.error(f"Ошибка при регистрации: {str(e)}")
+            flash(message, 'error')
+    return render_template('register.html', messages=session.pop('_flashes', []))
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
+
+    if request.method == 'POST':
+        email = request.form.get('email')
+        password = request.form.get('password')
+
+        success, message = login_user_with_credentials(email, password)
+        if success:
+            next_page = request.args.get('next')
+            return redirect(next_page or url_for('dashboard'))
+        else:
+            flash(message, 'error')
+
+    return render_template('login.html', messages=session.pop('_flashes', []))
+
+
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for('login'))
+
+
+@app.route('/')
+def index():
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
+    return redirect(url_for('login'))
+
+
+@app.route('/dashboard')
+@login_required
+def dashboard():
+    # Set session state in Streamlit
+    if 'streamlit_session' not in session:
+        session['streamlit_session'] = True
+
+    # Start Streamlit server internally for the main application
+    import subprocess
+    if not hasattr(app, 'streamlit_process') or not app.streamlit_process.poll() is None:
+        app.streamlit_process = subprocess.Popen(["streamlit", "run", "streamlit_app.py"])
+
+    # Redirect to the Streamlit app
+    return redirect("http://localhost:8501")
 
 # Page configuration
 st.set_page_config(page_title="SkinHealth AI - Professional Skin Analysis",
@@ -70,6 +114,7 @@ st.set_page_config(page_title="SkinHealth AI - Professional Skin Analysis",
 # Load custom CSS
 with open('assets/style.css') as f:
     st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
+
 
 def main():
     # Initialize session state variables if they don't exist
@@ -89,11 +134,6 @@ def main():
             st.session_state.chat_active = False
             st.rerun()  # Используем st.rerun() вместо st.experimental_rerun()
         return  # Exit the function early to show only chat interface
-
-    # Show registration form if user is not registered
-    if not st.session_state.get('registered', False):
-        show_registration_form()
-        return  # Exit the function early to show only registration form
 
     # Add a settings expander in the sidebar
     with st.sidebar:

@@ -10,13 +10,15 @@ from utils.ai_analysis import get_image_analysis
 from utils.language import get_translation, init_language, change_language, LANGUAGES
 from utils.location import get_user_location_from_ip, get_doctors_in_radius
 from utils.chat import init_chat, start_chat_with_doctor, render_chat_interface
-from utils.database import init_db, User, db
+from utils.database import init_db, User
 from utils.auth import init_auth, register_user, login_user_with_credentials
 from data.products import get_product_recommendations
 from data.doctors import get_nearby_doctors
 
 # Initialize Flask app
 app = Flask(__name__)
+app.config['SERVER_NAME'] = '0.0.0.0:5000'  # Ensure Flask uses correct hostname
+app.config['SECRET_KEY'] = 'skinhealth-secret-key'  # Add a secret key for sessions
 
 # Initialize database
 init_db(app)
@@ -30,37 +32,108 @@ init_language()
 # Initialize chat system
 init_chat()
 
+
 # Create a translation function with current language
 def t(key):
     return get_translation(key)
 
-# Streamlit registration form
-def show_registration_form():
-    st.title("Регистрация")
-    st.write("Пожалуйста, заполните форму ниже для регистрации.")
 
-    # Input fields for registration
-    email = st.text_input("Электронная почта")
-    username = st.text_input("Имя пользователя")
-    password = st.text_input("Пароль", type="password")
-    confirm_password = st.text_input("Подтвердите пароль", type="password")
+# User authentication routes
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
 
-    # Register button
-    if st.button("Зарегистрироваться"):
+    if request.method == 'POST':
+        email = request.form.get('email')
+        username = request.form.get('username')
+        password = request.form.get('password')
+        confirm_password = request.form.get('confirm_password')
+
         if password != confirm_password:
-            st.error("Пароли не совпадают!")
+            flash('Passwords do not match!', 'error')
+            return render_template('register.html', messages=session.pop('_flashes', []))
+
+        success, message = register_user(email, username, password)
+        if success:
+            flash(message, 'success')
+            return redirect(url_for('login'))
         else:
-            # Call the register_user function from utils.auth
-            try:
-                success, message = register_user(email, username, password)
-                if success:
-                    st.success(message)
-                    st.session_state.registered = True  # Mark user as registered
-                    st.rerun()  # Перезагрузить страницу для отображения основной программы
-                else:
-                    st.error(message)
-            except Exception as e:
-                st.error(f"Ошибка при регистрации: {str(e)}")
+            flash(message, 'error')
+    return render_template('register.html', messages=session.pop('_flashes', []))
+
+
+@app.route('/send_message', methods=['POST'])
+def send_message():
+    if not current_user.is_authenticated:
+        return jsonify({"error": "Not authenticated"}), 401
+
+    data = request.json
+    message = data.get('message')
+    doctor = data.get('doctor')
+
+    # In a real app, you'd store this message and notify the doctor
+    # For demo purposes, we'll just return a simple response
+    return jsonify({
+        "status": "success",
+        "response": "Спасибо за ваше сообщение. Я скоро свяжусь с вами."
+    })
+
+
+@app.route('/close_chat', methods=['POST'])
+def close_chat():
+    # This endpoint is called when the chat is closed
+    return jsonify({"status": "success"})
+
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
+
+    if request.method == 'POST':
+        email = request.form.get('email')
+        password = request.form.get('password')
+
+        success, message = login_user_with_credentials(email, password)
+        if success:
+            next_page = request.args.get('next')
+            return redirect(next_page or url_for('dashboard'))
+        else:
+            flash(message, 'error')
+
+    return render_template('login.html', messages=session.pop('_flashes', []))
+
+
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for('login'))
+
+
+@app.route('/')
+def index():
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
+    return redirect(url_for('login'))
+
+
+@app.route('/dashboard')
+@login_required
+def dashboard():
+    # Set session state in Streamlit
+    if 'streamlit_session' not in session:
+        session['streamlit_session'] = True
+
+    # Start Streamlit server internally for the main application
+    import subprocess
+    if not hasattr(app, 'streamlit_process') or not app.streamlit_process.poll() is None:
+        app.streamlit_process = subprocess.Popen(["streamlit", "run", "streamlit_app.py"])
+
+    # Redirect to the Streamlit app
+    return redirect("http://0.0.0.0:8501")
+
 
 # Page configuration
 st.set_page_config(page_title="SkinHealth AI - Professional Skin Analysis",
@@ -71,6 +144,7 @@ st.set_page_config(page_title="SkinHealth AI - Professional Skin Analysis",
 with open('assets/style.css') as f:
     st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
 
+
 def main():
     # Initialize session state variables if they don't exist
     if 'user_location' not in st.session_state:
@@ -79,21 +153,8 @@ def main():
     if 'search_radius' not in st.session_state:
         st.session_state.search_radius = 50  # Default radius in kilometers
 
-    # Check if chat is active
-    if st.session_state.get('chat_active', False):
-        # Render chat interface
-        render_chat_interface()
-
-        # Provide a way to return to the main app
-        if st.button("Вернуться к анализу кожи"):
-            st.session_state.chat_active = False
-            st.rerun()  # Используем st.rerun() вместо st.experimental_rerun()
-        return  # Exit the function early to show only chat interface
-
-    # Show registration form if user is not registered
-    if not st.session_state.get('registered', False):
-        show_registration_form()
-        return  # Exit the function early to show only registration form
+    # Add chat interface as a modal if active
+    render_chat_interface()
 
     # Add a settings expander in the sidebar
     with st.sidebar:
@@ -602,10 +663,28 @@ def main():
                 with col2:
                     # Add button to open chat with this doctor
                     if st.button(t("send_message"), key=f"msg_btn_{doctor['name']}"):
-                        # Start chat with this doctor
+                        # Start chat with this doctor in modal
                         start_chat_with_doctor(doctor)
-                        st.rerun()  # Используем st.rerun() вместо st.experimental_rerun()
 
 
 if __name__ == "__main__":
-    main()
+    # Run Flask app in a separate thread
+    import threading
+    from werkzeug.serving import run_simple
+
+
+    def run_flask():
+        run_simple('0.0.0.0', 5000, app, use_reloader=False, use_debugger=True)
+
+
+    # Start Flask server first
+    flask_thread = threading.Thread(target=run_flask)
+    flask_thread.daemon = True
+    flask_thread.start()
+
+    # Now run Streamlit part - with specific port/host settings
+    import streamlit.web.cli as stcli
+    import sys
+
+    sys.argv = ["streamlit", "run", "streamlit_app.py", "--server.address=0.0.0.0", "--server.port=8501"]
+    sys.exit(stcli.main())
