@@ -12,13 +12,25 @@ def get_user_location_from_ip():
     In a real app, you would use a service like ipinfo.io or similar.
     This is a simplified version for demo purposes.
     """
-    return {
-        "latitude": 55.7558,
-        "longitude": 37.6173,
-        "city": "Moscow",
-        "state": "Msc",
-        "country": "Russia"
-    }
+    try:
+        # Default location for demo purposes
+        return {
+            "latitude": 55.7558,
+            "longitude": 37.6173,
+            "city": "Moscow",
+            "state": "Msc",
+            "country": "Russia"
+        }
+    except Exception as e:
+        # Fallback to a default location if there's any error
+        print(f"Error getting location: {e}")
+        return {
+            "latitude": 0.0,
+            "longitude": 0.0,
+            "city": "Unknown",
+            "state": "Unknown",
+            "country": "Unknown"
+        }
 
 
 def geocode_address(address):

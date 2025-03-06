@@ -4,6 +4,12 @@ from flask_login import login_required, current_user, logout_user
 import cv2
 import numpy as np
 import os
+import sys
+
+# Ensure all directories are in the Python path
+current_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(current_dir)
+
 from utils.image_processing import process_image, analyze_skin, detect_problem_areas
 from utils.ml_model import predict_skin_condition
 from utils.ai_analysis import get_image_analysis
@@ -30,37 +36,79 @@ init_language()
 # Initialize chat system
 init_chat()
 
+
 # Create a translation function with current language
 def t(key):
     return get_translation(key)
 
-# Streamlit registration form
-def show_registration_form():
-    st.title("Регистрация")
-    st.write("Пожалуйста, заполните форму ниже для регистрации.")
 
-    # Input fields for registration
-    email = st.text_input("Электронная почта")
-    username = st.text_input("Имя пользователя")
-    password = st.text_input("Пароль", type="password")
-    confirm_password = st.text_input("Подтвердите пароль", type="password")
+# Streamlit authentication forms
+def show_auth_forms():
+    tab1, tab2 = st.tabs(["Вход", "Регистрация"])
 
-    # Register button
-    if st.button("Зарегистрироваться"):
-        if password != confirm_password:
-            st.error("Пароли не совпадают!")
-        else:
-            # Call the register_user function from utils.auth
+    with tab1:
+        st.header("Вход в систему")
+
+        # Input fields for login
+        login_email = st.text_input("Электронная почта", key="login_email")
+        login_password = st.text_input("Пароль", type="password", key="login_password")
+
+        # Login button
+        if st.button("Войти"):
             try:
-                success, message = register_user(email, username, password)
-                if success:
-                    st.success(message)
-                    st.session_state.registered = True  # Mark user as registered
-                    st.rerun()  # Перезагрузить страницу для отображения основной программы
+                if not login_email or not login_password:
+                    st.error("Пожалуйста, введите email и пароль")
                 else:
-                    st.error(message)
+                    # Find the user directly without using Flask-Login
+                    from utils.database import User
+                    user = User.query.filter_by(email=login_email).first()
+
+                    if user and user.check_password(login_password):
+                        # Set session state directly without Flask login
+                        st.session_state.authenticated = True
+                        st.session_state.user_id = user.id
+                        st.session_state.username = user.username
+                        st.session_state.registered = True
+
+                        st.success("Вход выполнен успешно")
+                        st.rerun()  # Перезагрузить страницу для отображения основной программы
+                    else:
+                        st.error("Неверный email или пароль")
             except Exception as e:
-                st.error(f"Ошибка при регистрации: {str(e)}")
+                st.error(f"Ошибка при входе: {str(e)}")
+                import traceback
+                st.error(traceback.format_exc())
+
+    with tab2:
+        st.header("Регистрация")
+        st.write("Пожалуйста, заполните форму ниже для регистрации.")
+
+        # Input fields for registration
+        email = st.text_input("Электронная почта", key="reg_email")
+        username = st.text_input("Имя пользователя", key="reg_username")
+        password = st.text_input("Пароль", type="password", key="reg_password")
+        confirm_password = st.text_input("Подтвердите пароль", type="password", key="reg_confirm_password")
+        user_type = st.selectbox("Тип пользователя",
+                                 ["Пациент", "Врач", "Косметическая фирма"],
+                                 key="reg_user_type")
+
+        # Register button
+        if st.button("Зарегистрироваться"):
+            if password != confirm_password:
+                st.error("Пароли не совпадают!")
+            else:
+                # Call the register_user function from utils.auth
+                try:
+                    success, message = register_user(email, username, password, user_type)
+                    if success:
+                        st.success(message)
+                        st.session_state.registered = True  # Mark user as registered
+                        st.rerun()  # Перезагрузить страницу для отображения основной программы
+                    else:
+                        st.error(message)
+                except Exception as e:
+                    st.error(f"Ошибка при регистрации: {str(e)}")
+
 
 # Page configuration
 st.set_page_config(page_title="SkinHealth AI - Professional Skin Analysis",
@@ -70,6 +118,7 @@ st.set_page_config(page_title="SkinHealth AI - Professional Skin Analysis",
 # Load custom CSS
 with open('assets/style.css') as f:
     st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
+
 
 def main():
     # Initialize session state variables if they don't exist
@@ -90,10 +139,10 @@ def main():
             st.rerun()  # Используем st.rerun() вместо st.experimental_rerun()
         return  # Exit the function early to show only chat interface
 
-    # Show registration form if user is not registered
+    # Show authentication forms if user is not registered
     if not st.session_state.get('registered', False):
-        show_registration_form()
-        return  # Exit the function early to show only registration form
+        show_auth_forms()
+        return  # Exit the function early to show only authentication forms
 
     # Add a settings expander in the sidebar
     with st.sidebar:
@@ -183,6 +232,7 @@ def main():
             # Get ML model predictions and AI analysis
             from utils.ml_model import predict_skin_condition
             from utils.ml_ensemble import predict_with_ensemble
+            from utils.specialized_models import predict_severe_condition, predict_child_skin_condition
 
             # Get predictions from all models
             ensemble_predictions = predict_with_ensemble(skin_features)
@@ -195,8 +245,11 @@ def main():
             ml_prediction = predict_skin_condition(skin_features) if most_reliable_model == "Random Forest" else \
                 ensemble_predictions[most_reliable_model]
 
-            # Get AI analysis without trying external API calls
-            ai_analysis = get_image_analysis(processed_image)
+            # Get model type from radio button selection (defaults to standard if not set)
+            selected_model_type = st.session_state.get('selected_model_type', "Standard Skin Analysis")
+
+            # Get AI analysis for the selected model type
+            ai_analysis = get_image_analysis(processed_image, selected_model_type)
 
             # Store problem areas in session state for display
             st.session_state.problem_areas = problem_areas
@@ -204,6 +257,26 @@ def main():
 
         # Display Results
         st.header(t("analysis_results"))
+
+        # Add model selection for different use cases
+        model_type = st.radio(
+            "Select analysis mode:",
+            ["Standard Skin Analysis", "Severe Skin Conditions", "Child Skin Analysis"],
+            horizontal=True
+        )
+
+        # Store selected model type in session state
+        st.session_state.selected_model_type = model_type
+
+        # Display appropriate explanation based on selected model
+        if model_type == "Standard Skin Analysis":
+            st.info("Standard analysis model focuses on common skin conditions like acne, uneven tone, and dullness.")
+        elif model_type == "Severe Skin Conditions":
+            st.info(
+                "This specialized model analyzes severe skin conditions like psoriasis, eczema, rosacea, and severe acne.")
+        else:  # Child Skin Analysis
+            st.info(
+                "Child skin analysis is optimized for detecting conditions common in children like atopic dermatitis, infantile acne, and cradle cap.")
 
         # Display the original and marked images side by side
         col_img1, col_img2 = st.columns(2)
@@ -247,20 +320,64 @@ def main():
         with col1:
             st.subheader(t("ml_model_analysis"))
 
-            # Show which model is being used for final recommendations
+            # Show which model is being used based on user selection
             if 'ensemble_predictions' in st.session_state:
-                most_reliable_model = st.session_state.ensemble_predictions.get("most_reliable_model", "Random Forest")
-                st.info(f"**{t('primary_model')}** {most_reliable_model} {t('used_for_recommendations')}")
+                ensemble_preds = st.session_state.ensemble_predictions
 
-                # Add a model selection dropdown
-                model_options = [name for name in st.session_state.ensemble_predictions.keys()
-                                 if name != "most_reliable_model"]
-                selected_model = st.selectbox(t("view_other_models"), model_options)
+                # Determine which model to show based on user selection
+                selected_model_type = st.session_state.get('selected_model_type', "Standard Skin Analysis")
+
+                if selected_model_type == "Standard Skin Analysis":
+                    # Use standard models (Random Forest, Gradient Boosting, SVM)
+                    standard_models = [name for name in ensemble_preds.keys()
+                                       if name not in ["most_reliable_model", "Severe Conditions", "Child Skin"]]
+
+                    if standard_models:
+                        most_reliable_model = ensemble_preds.get("most_reliable_model", "Random Forest")
+                        if most_reliable_model not in standard_models:
+                            most_reliable_model = standard_models[0]
+
+                        st.info(f"**{t('primary_model')}** {most_reliable_model} {t('used_for_recommendations')}")
+
+                        # Add a model selection dropdown for standard models
+                        selected_model = st.selectbox(t("view_other_models"), standard_models)
+                    else:
+                        selected_model = "Random Forest"
+                        st.warning("Standard skin analysis models not available")
+
+                elif selected_model_type == "Severe Skin Conditions":
+                    # Use severe conditions model
+                    if "Severe Conditions" in ensemble_preds:
+                        selected_model = "Severe Conditions"
+                        st.info("Using specialized model for severe skin conditions analysis")
+                    else:
+                        # Fallback to standard model
+                        selected_model = ensemble_preds.get("most_reliable_model", "Random Forest")
+                        st.warning("Severe conditions model not available, using standard model")
+
+                else:  # Child Skin Analysis
+                    # Use child skin model
+                    if "Child Skin" in ensemble_preds:
+                        selected_model = "Child Skin"
+                        st.info("Using specialized model for children's skin analysis")
+                    else:
+                        # Fallback to standard model
+                        selected_model = ensemble_preds.get("most_reliable_model", "Random Forest")
+                        st.warning("Child skin model not available, using standard model")
 
                 # Display the selected model's prediction
-                model_result = st.session_state.ensemble_predictions[selected_model]
-                st.write(f"**{t('condition')}** {model_result['condition']}")
-                st.write(f"**{t('confidence')}** {model_result['confidence']}")
+                if selected_model in ensemble_preds:
+                    model_result = ensemble_preds[selected_model]
+
+                    # Display model type badge
+                    model_type = model_result.get('model_type', 'standard')
+                    if model_type == 'severe_conditions':
+                        st.markdown("🔍 **Severe Conditions Analysis**")
+                    elif model_type == 'child_skin':
+                        st.markdown("👶 **Child Skin Analysis**")
+
+                    st.write(f"**{t('condition')}** {model_result['condition']}")
+                    st.write(f"**{t('confidence')}** {model_result['confidence']}")
 
                 # Display model probabilities as a bar chart
                 if 'probabilities' in model_result:

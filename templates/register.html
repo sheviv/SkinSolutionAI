@@ -91,6 +91,16 @@
             background-color: #f8d7da;
             color: #721c24;
         }
+
+        .form-select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            box-sizing: border-box;
+            background-color: white;
+        }
     </style>
 </head>
 <body>
@@ -99,7 +109,7 @@
             <h1>SkinHealth AI</h1>
             <p>Professional Skin Analysis</p>
         </div>
-        
+
         {% if messages %}
         <div class="flash-messages">
             {% for category, message in messages %}
@@ -109,7 +119,7 @@
             {% endfor %}
         </div>
         {% endif %}
-        
+
         <form method="POST" action="/register">
             <div class="form-group">
                 <label for="email">Email</label>
@@ -126,6 +136,14 @@
             <div class="form-group">
                 <label for="confirm_password">Confirm Password</label>
                 <input type="password" id="confirm_password" name="confirm_password" required minlength="6">
+            </div>
+            <div class="form-group">
+                <label for="user_type">Тип пользователя</label>
+                <select id="user_type" name="user_type" required class="form-select">
+                    <option value="Пациент">Пациент</option>
+                    <option value="Врач">Врач</option>
+                    <option value="Косметическая фирма">Косметическая фирма</option>
+                </select>
             </div>
             <button type="submit" class="btn">Register</button>
         </form>

@@ -4,21 +4,25 @@ from flask_login import login_required, current_user, logout_user
 import cv2
 import numpy as np
 import os
+import sys
+
+# Ensure all directories are in the Python path
+current_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(current_dir)
+
 from utils.image_processing import process_image, analyze_skin, detect_problem_areas
 from utils.ml_model import predict_skin_condition
 from utils.ai_analysis import get_image_analysis
 from utils.language import get_translation, init_language, change_language, LANGUAGES
 from utils.location import get_user_location_from_ip, get_doctors_in_radius
 from utils.chat import init_chat, start_chat_with_doctor, render_chat_interface
-from utils.database import init_db, User
+from utils.database import init_db, User, db
 from utils.auth import init_auth, register_user, login_user_with_credentials
 from data.products import get_product_recommendations
 from data.doctors import get_nearby_doctors
 
 # Initialize Flask app
 app = Flask(__name__)
-app.config['SERVER_NAME'] = '0.0.0.0:5000'  # Ensure Flask uses correct hostname
-app.config['SECRET_KEY'] = 'skinhealth-secret-key'  # Add a secret key for sessions
 
 # Initialize database
 init_db(app)
@@ -38,101 +42,69 @@ def t(key):
     return get_translation(key)
 
 
-# User authentication routes
-@app.route('/register', methods=['GET', 'POST'])
-def register():
-    if current_user.is_authenticated:
-        return redirect(url_for('dashboard'))
+# Streamlit authentication forms
+def show_auth_forms():
+    tab1, tab2 = st.tabs(["Вход", "Регистрация"])
 
-    if request.method == 'POST':
-        email = request.form.get('email')
-        username = request.form.get('username')
-        password = request.form.get('password')
-        confirm_password = request.form.get('confirm_password')
+    with tab1:
+        st.header("Вход в систему")
 
-        if password != confirm_password:
-            flash('Passwords do not match!', 'error')
-            return render_template('register.html', messages=session.pop('_flashes', []))
+        # Input fields for login
+        login_email = st.text_input("Электронная почта", key="login_email")
+        login_password = st.text_input("Пароль", type="password", key="login_password")
 
-        success, message = register_user(email, username, password)
-        if success:
-            flash(message, 'success')
-            return redirect(url_for('login'))
-        else:
-            flash(message, 'error')
-    return render_template('register.html', messages=session.pop('_flashes', []))
+        # Login button
+        if st.button("Войти"):
+            try:
+                if not login_email or not login_password:
+                    st.error("Пожалуйста, введите email и пароль")
+                else:
+                    # Find the user directly without using Flask-Login
+                    from utils.database import User
+                    user = User.query.filter_by(email=login_email).first()
 
+                    if user and user.check_password(login_password):
+                        # Set session state directly without Flask login
+                        st.session_state.authenticated = True
+                        st.session_state.user_id = user.id
+                        st.session_state.username = user.username
+                        st.session_state.registered = True
 
-@app.route('/send_message', methods=['POST'])
-def send_message():
-    if not current_user.is_authenticated:
-        return jsonify({"error": "Not authenticated"}), 401
+                        st.success("Вход выполнен успешно")
+                        st.rerun()  # Перезагрузить страницу для отображения основной программы
+                    else:
+                        st.error("Неверный email или пароль")
+            except Exception as e:
+                st.error(f"Ошибка при входе: {str(e)}")
+                import traceback
+                st.error(traceback.format_exc())
 
-    data = request.json
-    message = data.get('message')
-    doctor = data.get('doctor')
+    with tab2:
+        st.header("Регистрация")
+        st.write("Пожалуйста, заполните форму ниже для регистрации.")
 
-    # In a real app, you'd store this message and notify the doctor
-    # For demo purposes, we'll just return a simple response
-    return jsonify({
-        "status": "success",
-        "response": "Спасибо за ваше сообщение. Я скоро свяжусь с вами."
-    })
+        # Input fields for registration
+        email = st.text_input("Электронная почта", key="reg_email")
+        username = st.text_input("Имя пользователя", key="reg_username")
+        password = st.text_input("Пароль", type="password", key="reg_password")
+        confirm_password = st.text_input("Подтвердите пароль", type="password", key="reg_confirm_password")
 
-
-@app.route('/close_chat', methods=['POST'])
-def close_chat():
-    # This endpoint is called when the chat is closed
-    return jsonify({"status": "success"})
-
-
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    if current_user.is_authenticated:
-        return redirect(url_for('dashboard'))
-
-    if request.method == 'POST':
-        email = request.form.get('email')
-        password = request.form.get('password')
-
-        success, message = login_user_with_credentials(email, password)
-        if success:
-            next_page = request.args.get('next')
-            return redirect(next_page or url_for('dashboard'))
-        else:
-            flash(message, 'error')
-
-    return render_template('login.html', messages=session.pop('_flashes', []))
-
-
-@app.route('/logout')
-@login_required
-def logout():
-    logout_user()
-    return redirect(url_for('login'))
-
-
-@app.route('/')
-def index():
-    if current_user.is_authenticated:
-        return redirect(url_for('dashboard'))
-    return redirect(url_for('login'))
-
-
-@app.route('/dashboard')
-@login_required
-def dashboard():
-    # Set session state in Streamlit
-    if 'streamlit_session' not in session:
-        session['streamlit_session'] = True
-
-    # Start Streamlit server internally for the main application
-    import subprocess
-    if not hasattr(app, 'streamlit_process') or not app.streamlit_process.poll() is None:
-        app.streamlit_process = subprocess.Popen(["streamlit", "run", "streamlit_app.py"])
-
-    # Redirect to the Streamlit app
-    return redirect("http://0.0.0.0:8501")
+        # Register button
+        if st.button("Зарегистрироваться"):
+            if password != confirm_password:
+                st.error("Пароли не совпадают!")
+            else:
+                # Call the register_user function from utils.auth
+                try:
+                    success, message = register_user(email, username, password)
+                    if success:
+                        st.success(message)
+                        st.session_state.registered = True  # Mark user as registered
+                        st.rerun()  # Перезагрузить страницу для отображения основной программы
+                    else:
+                        st.error(message)
+                except Exception as e:
+                    st.error(f"Ошибка при регистрации: {str(e)}")
 
 
 # Page configuration
@@ -153,8 +125,21 @@ def main():
     if 'search_radius' not in st.session_state:
         st.session_state.search_radius = 50  # Default radius in kilometers
 
-    # Add chat interface as a modal if active
-    render_chat_interface()
+    # Check if chat is active
+    if st.session_state.get('chat_active', False):
+        # Render chat interface
+        render_chat_interface()
+
+        # Provide a way to return to the main app
+        if st.button("Вернуться к анализу кожи"):
+            st.session_state.chat_active = False
+            st.rerun()  # Используем st.rerun() вместо st.experimental_rerun()
+        return  # Exit the function early to show only chat interface
+
+    # Show authentication forms if user is not registered
+    if not st.session_state.get('registered', False):
+        show_auth_forms()
+        return  # Exit the function early to show only authentication forms
 
     # Add a settings expander in the sidebar
     with st.sidebar:
@@ -244,6 +229,7 @@ def main():
             # Get ML model predictions and AI analysis
             from utils.ml_model import predict_skin_condition
             from utils.ml_ensemble import predict_with_ensemble
+            from utils.specialized_models import predict_severe_condition, predict_child_skin_condition
 
             # Get predictions from all models
             ensemble_predictions = predict_with_ensemble(skin_features)
@@ -256,8 +242,11 @@ def main():
             ml_prediction = predict_skin_condition(skin_features) if most_reliable_model == "Random Forest" else \
                 ensemble_predictions[most_reliable_model]
 
-            # Get AI analysis without trying external API calls
-            ai_analysis = get_image_analysis(processed_image)
+            # Get model type from radio button selection (defaults to standard if not set)
+            selected_model_type = st.session_state.get('selected_model_type', "Standard Skin Analysis")
+
+            # Get AI analysis for the selected model type
+            ai_analysis = get_image_analysis(processed_image, selected_model_type)
 
             # Store problem areas in session state for display
             st.session_state.problem_areas = problem_areas
@@ -265,6 +254,26 @@ def main():
 
         # Display Results
         st.header(t("analysis_results"))
+
+        # Add model selection for different use cases
+        model_type = st.radio(
+            "Select analysis mode:",
+            ["Standard Skin Analysis", "Severe Skin Conditions", "Child Skin Analysis"],
+            horizontal=True
+        )
+
+        # Store selected model type in session state
+        st.session_state.selected_model_type = model_type
+
+        # Display appropriate explanation based on selected model
+        if model_type == "Standard Skin Analysis":
+            st.info("Standard analysis model focuses on common skin conditions like acne, uneven tone, and dullness.")
+        elif model_type == "Severe Skin Conditions":
+            st.info(
+                "This specialized model analyzes severe skin conditions like psoriasis, eczema, rosacea, and severe acne.")
+        else:  # Child Skin Analysis
+            st.info(
+                "Child skin analysis is optimized for detecting conditions common in children like atopic dermatitis, infantile acne, and cradle cap.")
 
         # Display the original and marked images side by side
         col_img1, col_img2 = st.columns(2)
@@ -308,20 +317,64 @@ def main():
         with col1:
             st.subheader(t("ml_model_analysis"))
 
-            # Show which model is being used for final recommendations
+            # Show which model is being used based on user selection
             if 'ensemble_predictions' in st.session_state:
-                most_reliable_model = st.session_state.ensemble_predictions.get("most_reliable_model", "Random Forest")
-                st.info(f"**{t('primary_model')}** {most_reliable_model} {t('used_for_recommendations')}")
+                ensemble_preds = st.session_state.ensemble_predictions
 
-                # Add a model selection dropdown
-                model_options = [name for name in st.session_state.ensemble_predictions.keys()
-                                 if name != "most_reliable_model"]
-                selected_model = st.selectbox(t("view_other_models"), model_options)
+                # Determine which model to show based on user selection
+                selected_model_type = st.session_state.get('selected_model_type', "Standard Skin Analysis")
+
+                if selected_model_type == "Standard Skin Analysis":
+                    # Use standard models (Random Forest, Gradient Boosting, SVM)
+                    standard_models = [name for name in ensemble_preds.keys()
+                                       if name not in ["most_reliable_model", "Severe Conditions", "Child Skin"]]
+
+                    if standard_models:
+                        most_reliable_model = ensemble_preds.get("most_reliable_model", "Random Forest")
+                        if most_reliable_model not in standard_models:
+                            most_reliable_model = standard_models[0]
+
+                        st.info(f"**{t('primary_model')}** {most_reliable_model} {t('used_for_recommendations')}")
+
+                        # Add a model selection dropdown for standard models
+                        selected_model = st.selectbox(t("view_other_models"), standard_models)
+                    else:
+                        selected_model = "Random Forest"
+                        st.warning("Standard skin analysis models not available")
+
+                elif selected_model_type == "Severe Skin Conditions":
+                    # Use severe conditions model
+                    if "Severe Conditions" in ensemble_preds:
+                        selected_model = "Severe Conditions"
+                        st.info("Using specialized model for severe skin conditions analysis")
+                    else:
+                        # Fallback to standard model
+                        selected_model = ensemble_preds.get("most_reliable_model", "Random Forest")
+                        st.warning("Severe conditions model not available, using standard model")
+
+                else:  # Child Skin Analysis
+                    # Use child skin model
+                    if "Child Skin" in ensemble_preds:
+                        selected_model = "Child Skin"
+                        st.info("Using specialized model for children's skin analysis")
+                    else:
+                        # Fallback to standard model
+                        selected_model = ensemble_preds.get("most_reliable_model", "Random Forest")
+                        st.warning("Child skin model not available, using standard model")
 
                 # Display the selected model's prediction
-                model_result = st.session_state.ensemble_predictions[selected_model]
-                st.write(f"**{t('condition')}** {model_result['condition']}")
-                st.write(f"**{t('confidence')}** {model_result['confidence']}")
+                if selected_model in ensemble_preds:
+                    model_result = ensemble_preds[selected_model]
+
+                    # Display model type badge
+                    model_type = model_result.get('model_type', 'standard')
+                    if model_type == 'severe_conditions':
+                        st.markdown("🔍 **Severe Conditions Analysis**")
+                    elif model_type == 'child_skin':
+                        st.markdown("👶 **Child Skin Analysis**")
+
+                    st.write(f"**{t('condition')}** {model_result['condition']}")
+                    st.write(f"**{t('confidence')}** {model_result['confidence']}")
 
                 # Display model probabilities as a bar chart
                 if 'probabilities' in model_result:
@@ -663,28 +716,10 @@ def main():
                 with col2:
                     # Add button to open chat with this doctor
                     if st.button(t("send_message"), key=f"msg_btn_{doctor['name']}"):
-                        # Start chat with this doctor in modal
+                        # Start chat with this doctor
                         start_chat_with_doctor(doctor)
+                        st.rerun()  # Используем st.rerun() вместо st.experimental_rerun()
 
 
 if __name__ == "__main__":
-    # Run Flask app in a separate thread
-    import threading
-    from werkzeug.serving import run_simple
-
-
-    def run_flask():
-        run_simple('0.0.0.0', 5000, app, use_reloader=False, use_debugger=True)
-
-
-    # Start Flask server first
-    flask_thread = threading.Thread(target=run_flask)
-    flask_thread.daemon = True
-    flask_thread.start()
-
-    # Now run Streamlit part - with specific port/host settings
-    import streamlit.web.cli as stcli
-    import sys
-
-    sys.argv = ["streamlit", "run", "streamlit_app.py", "--server.address=0.0.0.0", "--server.port=8501"]
-    sys.exit(stcli.main())
+    main()
