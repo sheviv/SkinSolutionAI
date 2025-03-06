@@ -131,8 +131,9 @@ def analyze_with_openai(base64_image, analysis_mode="standard"):
     """Get skin analysis from OpenAI's GPT-4 Vision with optional specialized analysis."""
     try:
         # Using a public demo key for OpenAI (replace with your actual public key)
-        OPENAI_API_KEY = "sk-demo-5wvPxGMTWGMrGkAgVE09T3BlbkFJJGy0YwBiNON5FlI3xkHj"
-        client = OpenAI(api_key=OPENAI_API_KEY)
+        # OPENAI_API_KEY = "sk-demo-5wvPxGMTWGMrGkAgVE09T3BlbkFJJGy0YwBiNON5FlI3xkHj"
+        # client = OpenAI(api_key=OPENAI_API_KEY)
+        client = OpenAI(api_key = os.environ.get("OPENAI_API_KEY"),)
 
         # Customize prompt based on analysis mode
         if analysis_mode == "child":
