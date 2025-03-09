@@ -17,7 +17,8 @@ TRANSLATIONS = {
 
         # Upload section
         "upload_header": "Upload Your Skin Photo",
-        "upload_info": "For best results, please ensure good lighting and a clear view of the skin area.",
+        "upload_info":
+        "For best results, please ensure good lighting and a clear view of the skin area.",
         "upload_button": "Choose an image...",
 
         # Analysis results
@@ -68,38 +69,50 @@ TRANSLATIONS = {
         "high": "High",
 
         # Metric descriptions
-        "tone_uniformity_desc": "Measures how even your skin color is across the analyzed area. Higher values indicate more even tone.",
-        "brightness_desc": "Indicates the overall luminosity of your skin. Higher values suggest a brighter complexion.",
-        "texture_desc": "Evaluates the smoothness of your skin surface. Lower values indicate smoother skin.",
-        "spots_desc": "Number of dark spots or hyperpigmentation areas detected in the image.",
-        "redness_desc": "Measures inflammation or irritation. Lower values indicate less redness.",
-        "pigmentation_desc": "Assesses the variation in melanin distribution. Higher values indicate more uneven pigmentation.",
+        "tone_uniformity_desc":
+        "Measures how even your skin color is across the analyzed area. Higher values indicate more even tone.",
+        "brightness_desc":
+        "Indicates the overall luminosity of your skin. Higher values suggest a brighter complexion.",
+        "texture_desc":
+        "Evaluates the smoothness of your skin surface. Lower values indicate smoother skin.",
+        "spots_desc":
+        "Number of dark spots or hyperpigmentation areas detected in the image.",
+        "redness_desc":
+        "Measures inflammation or irritation. Lower values indicate less redness.",
+        "pigmentation_desc":
+        "Assesses the variation in melanin distribution. Higher values indicate more uneven pigmentation.",
 
         # Recommendations
         "rec_niacinamide": "Consider products with niacinamide or vitamin C",
-        "rec_sunscreen": "Use sunscreen daily to prevent further uneven pigmentation",
+        "rec_sunscreen":
+        "Use sunscreen daily to prevent further uneven pigmentation",
         "rec_exfoliants": "Try chemical exfoliants like AHAs",
         "rec_vitamin_c": "Add vitamin C serum to your routine",
         "rec_gentle_exfoliation": "Use gentle exfoliation 2-3 times weekly",
         "rec_retinol": "Consider retinol products to improve cell turnover",
-        "rec_targeted_treatments": "Targeted treatments with tranexamic acid or alpha arbutin",
+        "rec_targeted_treatments":
+        "Targeted treatments with tranexamic acid or alpha arbutin",
         "rec_sun_protection": "Protect from sun exposure",
-        "rec_centella": "Look for products with centella asiatica or green tea",
+        "rec_centella":
+        "Look for products with centella asiatica or green tea",
         "rec_avoid_hot": "Avoid hot water and harsh cleansers",
-        "rec_licorice": "Consider products with licorice extract or kojic acid",
+        "rec_licorice":
+        "Consider products with licorice extract or kojic acid",
         "rec_consistent_sunscreen": "Ensure consistent sunscreen use",
         "rec_continue": "Continue with your current skincare routine",
         "rec_prevention": "Focus on prevention and maintenance",
 
         # Problem area analysis
         "comprehensive_analysis": "Comprehensive Problem Area Analysis",
-        "no_problem_areas": "No specific problem areas were detected in the image.",
+        "no_problem_areas":
+        "No specific problem areas were detected in the image.",
         "details": "Details",
         "recommended_actions": "Recommended Actions:",
 
         # ML model comparison
         "model_comparison": "Machine Learning Model Comparison",
-        "most_reliable": "The {model} model has been selected as the most reliable based on confidence scores and is being used for final recommendations.",
+        "most_reliable":
+        "The {model} model has been selected as the most reliable based on confidence scores and is being used for final recommendations.",
 
         # Products and doctors
         "recommended_products": "Recommended Products",
@@ -137,11 +150,19 @@ TRANSLATIONS = {
         "message_placeholder": "Type your message here...",
         "send": "Send",
         "cancel": "Cancel",
-
         "consult_professional": "Consult a Professional",
         "experience": "Experience:",
         "location": "Location:",
-        "contact": "Contact:"
+        "contact": "Contact:",
+        "doctor_login": "Doctor Login",
+        "doctor_login_email": "Email",
+        "doctor_login_password": "Password",
+        "doctor_login_submit": "Login",
+        "doctor_only": "Only doctors can access this page.",
+        "invalid_credentials": "Invalid email or password",
+        "please_login": "Please login as a doctor to view published analyses.",
+        "welcome_doctor": "Welcome, Dr. {name}",
+        "logout": "Logout"
     },
     "ru": {
         # App title and headers
@@ -152,7 +173,8 @@ TRANSLATIONS = {
 
         # Upload section
         "upload_header": "Загрузите фотографию вашей кожи",
-        "upload_info": "Для достижения наилучших результатов, пожалуйста, убедитесь в хорошем освещении и четком изображении участка кожи.",
+        "upload_info":
+        "Для достижения наилучших результатов, пожалуйста, убедитесь в хорошем освещении и четком изображении участка кожи.",
         "upload_button": "Выберите изображение...",
 
         # Analysis results
@@ -203,38 +225,55 @@ TRANSLATIONS = {
         "high": "Высокий",
 
         # Metric descriptions
-        "tone_uniformity_desc": "Измеряет насколько равномерен цвет вашей кожи по всей анализируемой области. Более высокие значения указывают на более равномерный тон.",
-        "brightness_desc": "Указывает на общую яркость вашей кожи. Более высокие значения предполагают более яркий цвет лица.",
-        "texture_desc": "Оценивает гладкость поверхности вашей кожи. Более низкие значения указывают на более гладкую кожу.",
-        "spots_desc": "Количество темных пятен или областей гиперпигментации, обнаруженных на изображении.",
-        "redness_desc": "Измеряет воспаление или раздражение. Более низкие значения указывают на меньшее покраснение.",
-        "pigmentation_desc": "Оценивает вариацию в распределении меланина. Более высокие значения указывают на более неравномерную пигментацию.",
+        "tone_uniformity_desc":
+        "Измеряет насколько равномерен цвет вашей кожи по всей анализируемой области. Более высокие значения указывают на более равномерный тон.",
+        "brightness_desc":
+        "Указывает на общую яркость вашей кожи. Более высокие значения предполагают более яркий цвет лица.",
+        "texture_desc":
+        "Оценивает гладкость поверхности вашей кожи. Более низкие значения указывают на более гладкую кожу.",
+        "spots_desc":
+        "Количество темных пятен или областей гиперпигментации, обнаруженных на изображении.",
+        "redness_desc":
+        "Измеряет воспаление или раздражение. Более низкие значения указывают на меньшее покраснение.",
+        "pigmentation_desc":
+        "Оценивает вариацию в распределении меланина. Более высокие значения указывают на более неравномерную пигментацию.",
 
         # Recommendations
-        "rec_niacinamide": "Рассмотрите продукты с ниацинамидом или витамином C",
-        "rec_sunscreen": "Используйте солнцезащитный крем ежедневно для предотвращения дальнейшей неравномерной пигментации",
+        "rec_niacinamide":
+        "Рассмотрите продукты с ниацинамидом или витамином C",
+        "rec_sunscreen":
+        "Используйте солнцезащитный крем ежедневно для предотвращения дальнейшей неравномерной пигментации",
         "rec_exfoliants": "Попробуйте химические эксфолианты, такие как AHA",
         "rec_vitamin_c": "Добавьте в свой уход сыворотку с витамином C",
-        "rec_gentle_exfoliation": "Используйте мягкое отшелушивание 2-3 раза в неделю",
-        "rec_retinol": "Рассмотрите продукты с ретинолом для улучшения обновления клеток",
-        "rec_targeted_treatments": "Целевое лечение с транексамовой кислотой или альфа-арбутином",
+        "rec_gentle_exfoliation":
+        "Используйте мягкое отшелушивание 2-3 раза в неделю",
+        "rec_retinol":
+        "Рассмотрите продукты с ретинолом для улучшения обновления клеток",
+        "rec_targeted_treatments":
+        "Целевое лечение с транексамовой кислотой или альфа-арбутином",
         "rec_sun_protection": "Защитите от воздействия солнца",
-        "rec_centella": "Ищите продукты с центеллой азиатской или зеленым чаем",
-        "rec_avoid_hot": "Избегайте горячей воды и агрессивных очищающих средств",
-        "rec_licorice": "Рассмотрите продукты с экстрактом солодки или койевой кислотой",
-        "rec_consistent_sunscreen": "Обеспечьте постоянное использование солнцезащитного крема",
+        "rec_centella":
+        "Ищите продукты с центеллой азиатской или зеленым чаем",
+        "rec_avoid_hot":
+        "Избегайте горячей воды и агрессивных очищающих средств",
+        "rec_licorice":
+        "Рассмотрите продукты с экстрактом солодки или койевой кислотой",
+        "rec_consistent_sunscreen":
+        "Обеспечьте постоянное использование солнцезащитного крема",
         "rec_continue": "Продолжайте свой текущий уход за кожей",
         "rec_prevention": "Сосредоточьтесь на профилактике и поддержании",
 
         # Problem area analysis
         "comprehensive_analysis": "Комплексный анализ проблемных областей",
-        "no_problem_areas": "На изображении не обнаружено конкретных проблемных областей.",
+        "no_problem_areas":
+        "На изображении не обнаружено конкретных проблемных областей.",
         "details": "Детали",
         "recommended_actions": "Рекомендуемые действия:",
 
         # ML model comparison
         "model_comparison": "Сравнение моделей машинного обучения",
-        "most_reliable": "Модель {model} была выбрана как наиболее надежная на основе показателей уверенности и используется для окончательных рекомендаций.",
+        "most_reliable":
+        "Модель {model} была выбрана как наиболее надежная на основе показателей уверенности и используется для окончательных рекомендаций.",
 
         # Products and doctors
         "recommended_products": "Рекомендуемые продукты",
@@ -254,7 +293,6 @@ TRANSLATIONS = {
         "comedogenic": "Комедогенный рейтинг:",
         "comedogenic_scale": "(0 = некомедогенный, 5 = высококомедогенный)",
         "certifications": "Сертификаты:",
-
         "consult_professional": "Проконсультируйтесь с профессионалом",
         "experience": "Опыт:",
         "location": "Местоположение:",
@@ -265,7 +303,16 @@ TRANSLATIONS = {
         "type_message": "Введите сообщение...",
         "send_message_btn": "Отправить",
         "exit_chat": "Выйти из чата",
-        "messages": "Сообщения"
+        "messages": "Сообщения",
+        "doctor_login": "Вход для врачей",
+        "doctor_login_email": "Электронная почта",
+        "doctor_login_password": "Пароль",
+        "doctor_login_submit": "Войти",
+        "doctor_only": "Только врачи могут получить доступ к этой странице.",
+        "invalid_credentials": "Неверная электронная почта или пароль",
+        "please_login": "Пожалуйста, войдите как врач, чтобы просмотреть опубликованные анализы.",
+        "welcome_doctor": "Добро пожаловать, Др. {name}",
+        "logout": "Выйти"
     }
 }
 

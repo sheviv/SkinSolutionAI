@@ -88,6 +88,9 @@ def show_auth_forms():
         username = st.text_input("Имя пользователя", key="reg_username")
         password = st.text_input("Пароль", type="password", key="reg_password")
         confirm_password = st.text_input("Подтвердите пароль", type="password", key="reg_confirm_password")
+        user_type = st.selectbox("Тип пользователя",
+                                 ["Пациент", "Врач", "Косметическая фирма"],
+                                 key="reg_user_type")
 
         # Register button
         if st.button("Зарегистрироваться"):
@@ -96,7 +99,7 @@ def show_auth_forms():
             else:
                 # Call the register_user function from utils.auth
                 try:
-                    success, message = register_user(email, username, password)
+                    success, message = register_user(email, username, password, user_type)
                     if success:
                         st.success(message)
                         st.session_state.registered = True  # Mark user as registered
@@ -423,7 +426,31 @@ def main():
             else:
                 st.info(t("openai_unavailable"))
 
-        # Display detected characteristics with expanded metrics and descriptions
+            # Handle publish button functionality
+        publish_button = st.button("Publish")
+        if publish_button:
+            if st.session_state.get('authenticated', False):
+                from utils.published_analysis import PublishedAnalysis
+
+                # Prepare analysis data to save
+                analysis_data = {
+                    'condition': ml_prediction['condition'],
+                    'features': skin_features,
+                    'image': processed_image
+                }
+
+                # Save the analysis
+                analysis_id = PublishedAnalysis.save_analysis(
+                    st.session_state.user_id,
+                    analysis_data
+                )
+
+                # Show success message with ID
+                st.success(f"Analysis published successfully! Share ID: {analysis_id}")
+            else:
+                st.warning("Please log in to publish your analysis.")
+
+        # Display Detected characteristics with expanded metrics and descriptions
         st.subheader(t("skin_metrics"))
 
         # Add descriptions for each metric - using translation keys

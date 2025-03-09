@@ -101,7 +101,7 @@ def show_auth_forms():
                 try:
                     success, message = register_user(email, username, password, user_type)
                     if success:
-                        st.success(message)
+                        # st.success(message)
                         st.session_state.registered = True  # Mark user as registered
                         st.rerun()  # Перезагрузить страницу для отображения основной программы
                     else:
@@ -115,9 +115,12 @@ st.set_page_config(page_title="SkinHealth AI - Professional Skin Analysis",
                    page_icon="🏥",
                    layout="wide")
 
-# Load custom CSS
-with open('assets/style.css') as f:
-    st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
+# Add custom pages to sidebar if not shown automatically
+# if st.session_state.get('registered', False):
+#     with st.sidebar:
+#         st.page_link("main.py", label="Main", icon="🏠")
+#         st.page_link("pages/view_analysis.py", label="View Analysis", icon="🔍")
+#         st.page_link("pages/cosmetic_login.py", label="Cosmetic Firm Portal", icon="💄")
 
 
 def main():
@@ -426,7 +429,31 @@ def main():
             else:
                 st.info(t("openai_unavailable"))
 
-        # Display detected characteristics with expanded metrics and descriptions
+        # Handle publish button functionality
+        publish_button = st.button("Publish")
+        if publish_button:
+            if st.session_state.get('authenticated', False):
+                from utils.published_analysis import PublishedAnalysis
+
+                # Prepare analysis data to save
+                analysis_data = {
+                    'condition': ml_prediction['condition'],
+                    'features': skin_features,
+                    'image': processed_image
+                }
+
+                # Save the analysis
+                analysis_id = PublishedAnalysis.save_analysis(
+                    st.session_state.user_id,
+                    analysis_data
+                )
+
+                # Show success message with ID
+                st.success(f"Analysis published successfully! Share ID: {analysis_id}")
+            else:
+                st.warning("Please log in to publish your analysis.")
+
+        # Display Detected characteristics with expanded metrics and descriptions
         st.subheader(t("skin_metrics"))
 
         # Add descriptions for each metric - using translation keys

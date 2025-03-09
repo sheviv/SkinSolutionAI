@@ -29,9 +29,8 @@ def register_user(email, username, password, user_type="Пациент"):
         return False, "Username already taken"
 
     # Create new user
-    new_user = User(email=email, username=username)
+    new_user = User(email=email, username=username, user_type=user_type)
     new_user.set_password(password)
-    new_user.user_type = user_type  # Установка типа пользователя после создания объекта
 
     try:
         db.session.add(new_user)

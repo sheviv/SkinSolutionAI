@@ -2,6 +2,7 @@ import os
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
+import json
 
 # Initialize SQLAlchemy
 db = SQLAlchemy()
@@ -12,10 +13,35 @@ class User(db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False)
     username = db.Column(db.String(80), unique=True, nullable=False)
     password_hash = db.Column(db.String(128), nullable=False)
-    # user_type = db.Column(db.String(20), nullable=False,
-    #                       default="Пациент")  # Тип пользователя
+    user_type = db.Column(db.String(20), nullable=False,
+                          default="Пациент")  # Тип пользователя
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     is_active = db.Column(db.Boolean, default=True)
+
+    # Relationship with published analyses
+    analyses = db.relationship('PublishedAnalysis', backref='user', lazy=True, cascade="all, delete-orphan")
+
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
+
+
+class PublishedAnalysis(db.Model):
+    id = db.Column(db.String(8), primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    condition = db.Column(db.String(100), nullable=False, default="Unknown")
+    features = db.Column(db.Text, nullable=True)  # Stored as JSON
+    image_path = db.Column(db.String(200), nullable=True)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    is_public = db.Column(db.Boolean, default=True)
+
+    def get_features_dict(self):
+        """Convert the JSON string of features back to dictionary"""
+        if self.features:
+            return json.loads(self.features)
+        return {}
 
     # Связи с профессиональными таблицами
     # doctor = db.relationship('Doctor',
@@ -26,12 +52,6 @@ class User(db.Model):
     #                                 backref='user',
     #                                 uselist=False,
     #                                 cascade="all, delete-orphan")
-
-    def set_password(self, password):
-        self.password_hash = generate_password_hash(password)
-
-    def check_password(self, password):
-        return check_password_hash(self.password_hash, password)
 
     # The following attributes are required by Flask-Login
     @property
@@ -102,3 +122,22 @@ def init_db(app):
             conn.close()
         except Exception as e:
             print(f"Migration error: {e}")
+
+
+class CosmeticProduct(db.Model):
+    """Model for storing cosmetic products"""
+    id = db.Column(db.String(8), primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    name = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text, nullable=False)
+    product_type = db.Column(db.String(50), nullable=False)
+    image_path = db.Column(db.String(200))
+    price = db.Column(db.Float, default=0.0)
+    ingredients = db.Column(db.Text)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def get_ingredients_list(self):
+        """Return ingredients as a list"""
+        if self.ingredients:
+            return json.loads(self.ingredients)
+        return []
