@@ -31,6 +31,9 @@ from utils.database import db
 
 db.init_app(app)
 
+# Push the application context so it's available throughout the script
+app.app_context().push()
+
 # Create product_images directory if it doesn't exist
 os.makedirs("data/product_images", exist_ok=True)
 
@@ -74,24 +77,23 @@ if not st.session_state.cosmetic_firm_logged_in:
         if submitted:
             if email and password:
                 # Authenticate cosmetic firm
-                with app.app_context():
-                    user = User.query.filter_by(email=email).first()
+                user = User.query.filter_by(email=email).first()
 
-                    if user and user.check_password(password):
-                        if user.user_type == "Косметическая фирма":
-                            # Set session state
-                            st.session_state.cosmetic_firm_logged_in = True
-                            st.session_state.cosmetic_firm_id = user.id
-                            st.session_state.cosmetic_firm_name = user.username
-                            st.success(f"Welcome, {user.username}!")
-                            st.rerun()
-                        else:
-                            st.error(
-                                "Only cosmetics firm can access this page.")
+                if user and user.check_password(password):
+                    if user.user_type == "Косметическая фирма":
+                        # Set session state
+                        st.session_state.cosmetic_firm_logged_in = True
+                        st.session_state.cosmetic_firm_id = user.id
+                        st.session_state.cosmetic_firm_name = user.username
+                        st.success(f"Welcome, {user.username}!")
+                        st.rerun()
                     else:
                         st.error(
-                            "Invalid email or password, or this account is not registered as a cosmetic firm."
-                        )
+                            "Only cosmetics firm can access this page.")
+                else:
+                    st.error(
+                        "Invalid email or password, or this account is not registered as a cosmetic firm."
+                    )
             else:
                 st.error("Please enter both email and password.")
 
@@ -135,54 +137,96 @@ else:
                 ingredients_input = st.text_area(
                     "Ingredients (comma-separated)")
 
+                st.subheader("Additional Product Information")
+                key_benefits_input = st.text_area(
+                    "Key Benefits (comma-separated)")
+                usage_instructions = st.text_area("How to Use")
+                warnings = st.text_area("Warnings for Use")
+
+                # Suitable for skin types (comma-separated)
+                suitable_for_input = st.text_area("Suitable for (comma-separated)")
+
+                # Additional information fields (without nested columns)
+                ph_level = st.text_input("pH Level")
+                fragrance = st.text_input("Fragrance")
+                comedogenic_rating = st.slider("Comedogenic Rating", 0, 5, 0)
+                additional_info = st.text_area("Additional Information")
+
                 # Image upload
                 uploaded_file = st.file_uploader("Choose product image...",
                                                  type=["jpg", "jpeg", "png"])
 
-                # Submit button
+                # Submit button (only use form_submit_button inside a form)
                 submitted = st.form_submit_button("Add Product")
 
-                if submitted:
-                    # Only check for product name as the essential field
-                    if not product_name: # and not product_description and not product_type:
-                        st.error("Please provide a Properties")
+            # Process the form submission outside the form
+            if submitted:
+                # Only check for product name as the essential field
+                if not product_name:  # and not product_description and not product_type:
+                    st.error("Please provide a Product Name")
+                else:
+                    # Process image if uploaded
+                    product_image = None
+                    if uploaded_file is not None:
+                        product_image = load_image(uploaded_file)
+
+                    # Process ingredients
+                    ingredients_list = []
+                    if ingredients_input:
+                        ingredients_list = [
+                            item.strip()
+                            for item in ingredients_input.split(",")
+                            if item.strip()
+                        ]
+
+                    # Process key benefits
+                    key_benefits_list = []
+                    if key_benefits_input:
+                        key_benefits_list = [
+                            item.strip()
+                            for item in key_benefits_input.split(",")
+                            if item.strip()
+                        ]
+
+                    # Process suitable for skin types
+                    suitable_for_list = []
+                    if suitable_for_input:
+                        suitable_for_list = [
+                            item.strip()
+                            for item in suitable_for_input.split(",")
+                            if item.strip()
+                        ]
+
+                    # Prepare product data
+                    product_data = {
+                        'name': product_name,
+                        'description': product_description,
+                        'product_type': product_type,
+                        'price': product_price,
+                        'ingredients': ingredients_list,
+                        'key_benefits': key_benefits_list,
+                        'usage_instructions': usage_instructions,
+                        'warnings': warnings,
+                        'suitable_for': suitable_for_list,
+                        'ph_level': ph_level,
+                        'fragrance': fragrance,
+                        'comedogenic_rating': comedogenic_rating,
+                        'additional_info': additional_info
+                    }
+
+                    # Save product
+                    product_id = ProductManager.save_product(
+                        st.session_state.cosmetic_firm_id, product_data,
+                        product_image)
+
+                    if product_id:
+                        st.success(
+                            f"Product added successfully! ID: {product_id}"
+                        )
+                        st.rerun()
                     else:
-                        # Process image if uploaded
-                        product_image = None
-                        if uploaded_file is not None:
-                            product_image = load_image(uploaded_file)
-
-                        # Process ingredients
-                        ingredients_list = []
-                        if ingredients_input:
-                            ingredients_list = [
-                                item.strip()
-                                for item in ingredients_input.split(",")
-                                if item.strip()
-                            ]
-
-                        # Prepare product data
-                        product_data = {
-                            'name': product_name,
-                            'description': product_description,
-                            'product_type': product_type,
-                            'price': product_price,
-                            'ingredients': ingredients_list
-                        }
-
-                        # Save product
-                        product_id = ProductManager.save_product(
-                            st.session_state.cosmetic_firm_id, product_data,
-                            product_image)
-
-                        if product_id:
-                            st.success(
-                                f"Product added successfully! ID: {product_id}"
-                            )
-                            st.rerun()
-                        else:
-                            st.error(
-                                "Failed to add product. Please try again.")
+                        st.error(
+                            "Failed to add product. Please try again.")
 
         with col2:
             st.header("Your Products")
@@ -228,66 +272,93 @@ else:
                         st.caption(
                             f"Added: {product.get('timestamp', '')[:10]}")
 
+                        # Create two columns for buttons to place them side by side
+                        btn_col1, btn_col2 = st.columns(2)
+
                         # View details button
-                        if st.button("View Details", key=f"view_{product_id}"):
-                            st.session_state.selected_product_id = product_id
-                            st.rerun()
+                        with btn_col1:
+                            if st.button("View Details", key=f"view_btn_{product_id}"):
+                                st.session_state.selected_product_id = product_id
+                                st.rerun()
 
                         # Delete product button
-                        if st.button("Delete", key=f"delete_{product_id}"):
-                            if ProductManager.delete_product(product_id):
-                                st.success("Product deleted successfully!")
-                                st.rerun()
-                            else:
-                                st.error(
-                                    "Failed to delete product. Please try again."
+                        with btn_col2:
+                            if st.button("Delete", key=f"delete_btn_{product_id}"):
+                                if ProductManager.delete_product(product_id):
+                                    st.success("Product deleted successfully!")
+                                    st.rerun()
+                                else:
+                                    st.error(
+                                        "Failed to delete product. Please try again."
+                                    )
+
+                        # Show product details if this is the selected product
+                        selected_product_id = st.session_state.get('selected_product_id')
+                        if selected_product_id == product_id:
+                            # Retrieve the full product data
+                            selected_product = ProductManager.get_product(product_id)
+                            if selected_product:
+                                st.markdown("---")
+                                st.subheader("Product Details")
+
+                                # Display product information
+                                st.markdown(f"**Description:** {selected_product['description']}")
+
+                                # Display ingredients
+                                if selected_product.get('ingredients'):
+                                    st.write("**Ingredients:**")
+                                    for ingredient in selected_product['ingredients']:
+                                        st.write(f"- {ingredient}")
+
+                                # Display other details
+                                if selected_product.get('key_benefits'):
+                                    st.markdown("**Key Benefits:**")
+                                    for benefit in selected_product['key_benefits']:
+                                        st.markdown(f"- {benefit}")
+
+                                if selected_product.get('usage_instructions'):
+                                    st.markdown("**How to Use:**")
+                                    st.write(selected_product['usage_instructions'])
+
+                                if selected_product.get('suitable_for'):
+                                    st.markdown("**Suitable for:**")
+                                    for suitable in selected_product['suitable_for']:
+                                        st.write(f"- {suitable}")
+
+                                if selected_product.get('warnings'):
+                                    st.markdown("**Warnings:**")
+                                    st.write(selected_product['warnings'])
+
+                                with st.expander("Additional Information"):
+                                    if selected_product.get('ph_level'):
+                                        st.markdown(f"**pH Level:** {selected_product['ph_level']}")
+
+                                    if selected_product.get('fragrance'):
+                                        st.markdown(f"**Fragrance:** {selected_product['fragrance']}")
+
+                                    if 'comedogenic_rating' in selected_product:
+                                        st.markdown(
+                                            f"**Comedogenic Rating:** {selected_product['comedogenic_rating']}/5")
+
+                                    if selected_product.get('additional_info'):
+                                        st.markdown("**Additional Info:**")
+                                        st.write(selected_product['additional_info'])
+
+                                st.write(
+                                    f"**Added on:** {selected_product.get('timestamp', '')[:10]}"
                                 )
+
+                                # Button to close details
+                                if st.button("Close Details", key=f"close_details_{product_id}"):
+                                    del st.session_state.selected_product_id
+                                    st.rerun()
+
+                                st.markdown("---")
 
                         st.divider()
 
             # Show product details if selected
-            if 'selected_product_id' in st.session_state:
-                product_id = st.session_state.selected_product_id
-                product = ProductManager.get_product(product_id)
-
-                if product:
-                    st.header("Product Details")
-
-                    # Create columns for image and details
-                    detail_col1, detail_col2 = st.columns([1, 1])
-
-                    with detail_col1:
-                        # Display the image if available
-                        img_path = product.get('image_path')
-                        if img_path and os.path.exists(img_path):
-                            img = cv2.imread(img_path)
-                            if img is not None:
-                                img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-                                st.image(img_rgb,
-                                         caption="Product Image",
-                                         use_container_width=True)
-
-                    with detail_col2:
-                        # Display product information
-                        st.markdown(f"### {product['name']}")
-                        st.info(f"Type: {product['product_type']}")
-                        st.write(f"Price: ${product['price']:.2f}")
-                        st.write(f"**Description:** {product['description']}")
-
-                        # Display ingredients
-                        if product.get('ingredients'):
-                            st.write("**Ingredients:**")
-                            for ingredient in product['ingredients']:
-                                st.write(f"- {ingredient}")
-
-                        st.write(
-                            f"**Added on:** {product.get('timestamp', '')[:10]}"
-                        )
-
-                    # Button to close details
-                    if st.button("Close Details"):
-                        del st.session_state.selected_product_id
-                        st.rerun()
+            selected_product_id = st.session_state.get('selected_product_id')
 
     with tab2:
         st.header("Analytics Dashboard")

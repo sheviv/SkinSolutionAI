@@ -115,6 +115,7 @@ st.set_page_config(page_title="SkinHealth AI - Professional Skin Analysis",
                    page_icon="🏥",
                    layout="wide")
 
+
 # Add custom pages to sidebar if not shown automatically
 # if st.session_state.get('registered', False):
 #     with st.sidebar:
@@ -633,7 +634,8 @@ def main():
 
         # Product Recommendations section
         st.header(t("recommended_products"))
-        products = get_product_recommendations(ml_prediction['condition'])
+        from utils.product_recommendation import get_database_products
+        products = get_database_products()
 
         for product in products:
             with st.expander(f"🏥 {product['name']} - ${product['price']}",
@@ -652,20 +654,27 @@ def main():
 
                 # Usage Instructions
                 st.subheader(f"📝 {t('how_to_use')}")
-                st.write(
-                    f"**{t('frequency')}** {product['usage_instructions']['frequency']}"
-                )
-                st.write(f"**{t('steps')}**")
-                for step in product['usage_instructions']['steps']:
-                    st.write(f"- {step}")
-                if product['usage_instructions']['warnings']:
-                    st.warning(
-                        f"⚠️ **{t('warning')}** {product['usage_instructions']['warnings']}"
+
+                # Handle usage_instructions as either string or dictionary
+                if isinstance(product['usage_instructions'], dict):
+                    # If it's a dictionary, access the keys
+                    st.write(
+                        f"**{t('frequency')}** {product['usage_instructions'].get('frequency', 'Not specified')}"
                     )
+                    st.write(f"**{t('steps')}**")
+                    for step in product['usage_instructions'].get('steps', []):
+                        st.write(f"- {step}")
+                    if product['usage_instructions'].get('warnings'):
+                        st.warning(
+                            f"⚠️ **{t('warning')}** {product['usage_instructions'].get('warnings', '')}"
+                        )
+                else:
+                    # If it's a string, display it directly
+                    st.write(product['usage_instructions'])
 
                 # Skin Compatibility
                 st.subheader(f"👥 {t('suitable_for')}")
-                st.write(", ".join(product['skin_compatibility']))
+                st.write(", ".join(product.get('suitable_for', product.get('skin_compatibility', []))))
 
                 # Ingredient Analysis
                 st.subheader(f"🔬 {t('ingredient_analysis')}")

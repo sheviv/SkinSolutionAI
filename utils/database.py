@@ -134,10 +134,30 @@ class CosmeticProduct(db.Model):
     image_path = db.Column(db.String(200))
     price = db.Column(db.Float, default=0.0)
     ingredients = db.Column(db.Text)
+    key_benefits = db.Column(db.Text)
+    usage_instructions = db.Column(db.Text)
+    warnings = db.Column(db.Text)
+    suitable_for = db.Column(db.Text)
+    ph_level = db.Column(db.String(20))
+    fragrance = db.Column(db.String(50))
+    comedogenic_rating = db.Column(db.Integer)
+    additional_info = db.Column(db.Text)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
     def get_ingredients_list(self):
         """Return ingredients as a list"""
         if self.ingredients:
             return json.loads(self.ingredients)
+        return []
+
+    def get_key_benefits_list(self):
+        """Return key benefits as a list"""
+        if self.key_benefits:
+            return json.loads(self.key_benefits)
+        return []
+
+    def get_suitable_for_list(self):
+        """Return suitable for skin types as a list"""
+        if self.suitable_for:
+            return json.loads(self.suitable_for)
         return []

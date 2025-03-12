@@ -8,7 +8,7 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            background-color: #f4f7f9;
+            background: linear-gradient(135deg, #2b0a3d, #5a1b6d);
             margin: 0;
             padding: 0;
             display: flex;
@@ -17,11 +17,12 @@
             min-height: 100vh;
         }
         .auth-container {
-            background-color: white;
-            border-radius: 10px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
             padding: 40px;
-            width: 400px;
+            width: 350px;
             max-width: 90%;
         }
         .logo {
@@ -29,48 +30,133 @@
             margin-bottom: 30px;
         }
         .logo h1 {
-            color: #4b9bd3;
+            color: white;
             margin: 0;
+        }
+        .logo p {
+            color: rgba(255, 255, 255, 0.8);
+        }
+        .user-icon {
+            width: 80px;
+            height: 80px;
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            margin: 0 auto 25px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        .user-icon:before {
+            content: '';
+            width: 40px;
+            height: 40px;
+            background-color: rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            position: absolute;
+            top: 15px;
+        }
+        .user-icon:after {
+            content: '';
+            width: 60px;
+            height: 30px;
+            background-color: rgba(255, 255, 255, 0.5);
+            border-radius: 50px 50px 0 0;
+            position: absolute;
+            bottom: 5px;
         }
         .form-group {
             margin-bottom: 20px;
+            position: relative;
         }
         .form-group label {
             display: block;
             margin-bottom: 8px;
             font-weight: 600;
-            color: #555;
+            color: rgba(255, 255, 255, 0.8);
         }
-        .form-group input {
+        .form-group input, .form-group select {
             width: 100%;
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
+            padding: 12px 12px 12px 40px;
+            border: none;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+            border-radius: 0;
             font-size: 16px;
             box-sizing: border-box;
+            background-color: transparent;
+            color: white;
+        }
+        .form-group input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+        .form-group i {
+            position: absolute;
+            left: 0;
+            top: 35px;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 20px;
+        }
+        .form-group .icon-email:before {
+            content: '✉';
+        }
+        .form-group .icon-user:before {
+            content: '👤';
+        }
+        .form-group .icon-password:before {
+            content: '🔒';
+        }
+        .form-group .icon-user-type:before {
+            content: '🏥';
+        }
+        .form-select {
+            width: 100%;
+            padding: 12px 12px 12px 40px;
+            border: none;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+            border-radius: 0;
+            font-size: 16px;
+            box-sizing: border-box;
+            background-color: transparent;
+            color: white;
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-image: linear-gradient(45deg, transparent 50%, rgba(255, 255, 255, 0.8) 50%), linear-gradient(135deg, rgba(255, 255, 255, 0.8) 50%, transparent 50%);
+            background-position: calc(100% - 20px) center, calc(100% - 15px) center;
+            background-size: 5px 5px, 5px 5px;
+            background-repeat: no-repeat;
+        }
+        .form-select option {
+            background-color: #3c1053;
+            color: white;
         }
         .btn {
             display: block;
             width: 100%;
             padding: 14px;
-            background-color: #4b9bd3;
+            background: linear-gradient(to right, #7928ca, #4361ee);
             color: white;
             border: none;
-            border-radius: 5px;
+            border-radius: 50px;
             font-size: 16px;
             cursor: pointer;
             font-weight: bold;
+            margin-top: 20px;
+            transition: transform 0.2s;
         }
         .btn:hover {
-            background-color: #3c8bc3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
         }
         .alt-link {
             text-align: center;
-            margin-top: 20px;
+            margin-top: 30px;
+            color: rgba(255, 255, 255, 0.7);
         }
         .alt-link a {
-            color: #4b9bd3;
+            color: white;
             text-decoration: none;
+            font-weight: bold;
         }
         .alt-link a:hover {
             text-decoration: underline;
@@ -84,22 +170,12 @@
             margin-bottom: 10px;
         }
         .flash-success {
-            background-color: #d4edda;
-            color: #155724;
+            background-color: rgba(21, 87, 36, 0.7);
+            color: white;
         }
         .flash-error {
-            background-color: #f8d7da;
-            color: #721c24;
-        }
-
-        .form-select {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            font-size: 16px;
-            box-sizing: border-box;
-            background-color: white;
+            background-color: rgba(114, 28, 36, 0.7);
+            color: white;
         }
     </style>
 </head>
@@ -109,6 +185,8 @@
             <h1>SkinHealth AI</h1>
             <p>Professional Skin Analysis</p>
         </div>
+
+        <div class="user-icon"></div>
 
         {% if messages %}
         <div class="flash-messages">
@@ -122,34 +200,34 @@
 
         <form method="POST" action="/register">
             <div class="form-group">
-                <label for="email">Email</label>
-                <input type="email" id="email" name="email" required>
+                <i class="icon-email"></i>
+                <input type="email" id="email" name="email" placeholder="Email" required>
             </div>
             <div class="form-group">
-                <label for="username">Username</label>
-                <input type="text" id="username" name="username" required>
+                <i class="icon-user"></i>
+                <input type="text" id="username" name="username" placeholder="Username" required>
             </div>
             <div class="form-group">
-                <label for="password">Password</label>
-                <input type="password" id="password" name="password" required minlength="6">
+                <i class="icon-password"></i>
+                <input type="password" id="password" name="password" placeholder="Password" required minlength="6">
             </div>
             <div class="form-group">
-                <label for="confirm_password">Confirm Password</label>
-                <input type="password" id="confirm_password" name="confirm_password" required minlength="6">
+                <i class="icon-password"></i>
+                <input type="password" id="confirm_password" name="confirm_password" placeholder="Confirm Password" required minlength="6">
             </div>
             <div class="form-group">
-                <label for="user_type">Тип пользователя</label>
-                <select id="user_type" name="user_type" required class="form-select">
-                    <option value="Пациент">Пациент</option>
-                    <option value="Врач">Врач</option>
-                    <option value="Косметическая фирма">Косметическая фирма</option>
+                <i class="icon-user-type"></i>
+                <select id="role" name="role" required class="form-select">
+                    <option value="Patient">Пациент</option>
+                    <option value="Doctor">Врач</option>
+                    <option value="Cosmetic">Косметическая фирма</option>
                 </select>
             </div>
-            <button type="submit" class="btn">Register</button>
+            <button type="submit" class="btn">REGISTER</button>
         </form>
         
         <div class="alt-link">
-            <p>Already have an account? <a href="/login">Login</a></p>
+            <p>Already have an account? <a href="/login">LOGIN</a></p>
         </div>
     </div>
 </body>

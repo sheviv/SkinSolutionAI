@@ -47,6 +47,15 @@ class ProductManager:
             db.init_app(app)
 
             with app.app_context():
+                # Convert lists to JSON strings
+                key_benefits_json = None
+                if 'key_benefits' in product_data and product_data['key_benefits']:
+                    key_benefits_json = json.dumps(product_data['key_benefits'])
+
+                suitable_for_json = None
+                if 'suitable_for' in product_data and product_data['suitable_for']:
+                    suitable_for_json = json.dumps(product_data['suitable_for'])
+
                 new_product = CosmeticProduct(
                     id=product_id,
                     user_id=user_id,
@@ -56,6 +65,14 @@ class ProductManager:
                     image_path=image_path,
                     price=product_data.get('price', 0.0),
                     ingredients=ingredients_json,
+                    key_benefits=key_benefits_json,
+                    usage_instructions=product_data.get('usage_instructions', ''),
+                    warnings=product_data.get('warnings', ''),
+                    suitable_for=suitable_for_json,
+                    ph_level=product_data.get('ph_level', ''),
+                    fragrance=product_data.get('fragrance', ''),
+                    comedogenic_rating=product_data.get('comedogenic_rating', 0),
+                    additional_info=product_data.get('additional_info', ''),
                     timestamp=datetime.datetime.now())
 
                 # Add to database and commit
@@ -85,7 +102,7 @@ class ProductManager:
             with app.app_context():
                 products = CosmeticProduct.query.filter_by(
                     user_id=user_id).order_by(
-                        CosmeticProduct.timestamp.desc()).all()
+                    CosmeticProduct.timestamp.desc()).all()
 
                 if products:
                     # Convert from database models to dictionary
@@ -98,6 +115,14 @@ class ProductManager:
                             'image_path': product.image_path,
                             'price': product.price,
                             'ingredients': product.get_ingredients_list(),
+                            'key_benefits': product.get_key_benefits_list(),
+                            'usage_instructions': product.usage_instructions,
+                            'warnings': product.warnings,
+                            'suitable_for': product.get_suitable_for_list(),
+                            'ph_level': product.ph_level,
+                            'fragrance': product.fragrance,
+                            'comedogenic_rating': product.comedogenic_rating,
+                            'additional_info': product.additional_info,
                             'timestamp': product.timestamp.isoformat()
                         }
                         for product in products
@@ -133,6 +158,14 @@ class ProductManager:
                         'image_path': product.image_path,
                         'price': product.price,
                         'ingredients': product.get_ingredients_list(),
+                        'key_benefits': product.get_key_benefits_list(),
+                        'usage_instructions': product.usage_instructions,
+                        'warnings': product.warnings,
+                        'suitable_for': product.get_suitable_for_list(),
+                        'ph_level': product.ph_level,
+                        'fragrance': product.fragrance,
+                        'comedogenic_rating': product.comedogenic_rating,
+                        'additional_info': product.additional_info,
                         'timestamp': product.timestamp.isoformat()
                     }
                 return None
