@@ -10,7 +10,7 @@ from utils.chat import init_chat, start_chat_with_doctor, render_chat_interface
 from data.products import get_product_recommendations
 from data.doctors import get_nearby_doctors
 from utils.product_recommendation import get_database_products
-from pages.product_recommendations import display_product
+# from pages.product_recommendations import display_product
 import cv2
 import numpy as np
 from utils.auth import register_user, login_user  # Import necessary functions

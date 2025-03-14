@@ -18,8 +18,26 @@ from utils.location import get_user_location_from_ip, get_doctors_in_radius
 from utils.chat import init_chat, start_chat_with_doctor, render_chat_interface
 from utils.database import init_db, User, db
 from utils.auth import init_auth, register_user, login_user_with_credentials
-from data.products import get_product_recommendations
+from utils.product_recommendation import get_database_products
 from data.doctors import get_nearby_doctors
+
+# Initialize session state variables if they don't exist
+if 'authenticated' not in st.session_state:
+    st.session_state.authenticated = False
+if 'registered' not in st.session_state:
+    st.session_state.registered = False
+if 'api_keys_checked' not in st.session_state:
+    st.session_state.api_keys_checked = False
+if 'user_id' not in st.session_state:
+    st.session_state.user_id = None
+if 'username' not in st.session_state:
+    st.session_state.username = None
+if 'language' not in st.session_state:
+    st.session_state.language = "en"
+if 'chat_active' not in st.session_state:
+    st.session_state.chat_active = False
+if 'selected_model_type' not in st.session_state:
+    st.session_state.selected_model_type = "Standard Skin Analysis"
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -71,7 +89,7 @@ def show_auth_forms():
                         st.session_state.registered = True
 
                         st.success("Вход выполнен успешно")
-                        st.rerun()  # Перезагрузить страницу для отображения основной программы
+                        st.rerun()  # Reload the page to display the main program
                     else:
                         st.error("Неверный email или пароль")
             except Exception as e:
@@ -103,7 +121,7 @@ def show_auth_forms():
                     if success:
                         # st.success(message)
                         st.session_state.registered = True  # Mark user as registered
-                        st.rerun()  # Перезагрузить страницу для отображения основной программы
+                        st.rerun()  # Reload the page to display the main program
                     else:
                         st.error(message)
                 except Exception as e:
@@ -114,14 +132,6 @@ def show_auth_forms():
 st.set_page_config(page_title="SkinHealth AI - Professional Skin Analysis",
                    page_icon="🏥",
                    layout="wide")
-
-
-# Add custom pages to sidebar if not shown automatically
-# if st.session_state.get('registered', False):
-#     with st.sidebar:
-#         st.page_link("main.py", label="Main", icon="🏠")
-#         st.page_link("pages/view_analysis.py", label="View Analysis", icon="🔍")
-#         st.page_link("pages/cosmetic_login.py", label="Cosmetic Firm Portal", icon="💄")
 
 
 def main():
@@ -140,7 +150,7 @@ def main():
         # Provide a way to return to the main app
         if st.button("Вернуться к анализу кожи"):
             st.session_state.chat_active = False
-            st.rerun()  # Используем st.rerun() вместо st.experimental_rerun()
+            st.rerun()
         return  # Exit the function early to show only chat interface
 
     # Show authentication forms if user is not registered
@@ -177,11 +187,11 @@ def main():
             # Option to enter location manually (simplified for demo)
             if st.button(t("detect_location")):
                 st.session_state.user_location = get_user_location_from_ip()
-                st.rerun()  # Используем st.rerun() вместо st.experimental_rerun()
+                st.rerun()
 
             # Search radius setting
             st.write(f"**{t('search_radius')}**")
-            radius_options = range(0, 100 + 1)
+            radius_options = list(range(0, 100 + 1))
             selected_radius = st.select_slider(
                 "",
                 options=radius_options,
@@ -370,6 +380,7 @@ def main():
                         st.warning("Child skin model not available, using standard model")
 
                 # Display the selected model's prediction
+                model_result = {}
                 if selected_model in ensemble_preds:
                     model_result = ensemble_preds[selected_model]
 
@@ -384,7 +395,7 @@ def main():
                     st.write(f"**{t('confidence')}** {model_result['confidence']}")
 
                 # Display model probabilities as a bar chart
-                if 'probabilities' in model_result:
+                if model_result and 'probabilities' in model_result:
                     import altair as alt
                     import pandas as pd
 
@@ -418,14 +429,14 @@ def main():
 
         with col2:
             st.subheader(t("anthropic_analysis"))
-            if ai_analysis and ai_analysis['anthropic_analysis']:
+            if ai_analysis and ai_analysis.get('anthropic_analysis'):
                 st.markdown(ai_analysis['anthropic_analysis'])
             else:
                 st.info(t("anthropic_unavailable"))
 
         with col3:
             st.subheader(t("openai_analysis"))
-            if ai_analysis and ai_analysis['openai_analysis']:
+            if ai_analysis and ai_analysis.get('openai_analysis'):
                 st.markdown(ai_analysis['openai_analysis'])
             else:
                 st.info(t("openai_unavailable"))
@@ -634,88 +645,117 @@ def main():
 
         # Product Recommendations section
         st.header(t("recommended_products"))
-        from utils.product_recommendation import get_database_products
-        products = get_database_products()
+        import os
+        from PIL import Image
 
-        for product in products:
-            with st.expander(f"🏥 {product['name']} - ${product['price']}",
-                             expanded=False):
-                # Basic Information
-                st.write(f"**{t('description')}** {product['description']}")
+        try:
+            # Get all products from database
+            all_products = get_database_products()
 
-                # Ingredients Section
-                st.subheader(f"🧪 {t('ingredients')}")
-                st.write(", ".join(product['ingredients']))
+            # Limit to 6 products maximum
+            max_products = 6
+            products_to_display = all_products[:max_products]
 
-                # Key Benefits
-                st.subheader(f"✨ {t('key_benefits')}")
-                for benefit in product['key_benefits']:
-                    st.write(f"- {benefit}")
+            # Show message if there are more products than displayed
+            if len(all_products) > max_products:
+                st.info(f"Showing {max_products} of {len(all_products)} total products.")
 
-                # Usage Instructions
-                st.subheader(f"📝 {t('how_to_use')}")
+            if not products_to_display:
+                st.warning("No products found in the database.")
 
-                # Handle usage_instructions as either string or dictionary
-                if isinstance(product['usage_instructions'], dict):
-                    # If it's a dictionary, access the keys
-                    st.write(
-                        f"**{t('frequency')}** {product['usage_instructions'].get('frequency', 'Not specified')}"
-                    )
-                    st.write(f"**{t('steps')}**")
-                    for step in product['usage_instructions'].get('steps', []):
-                        st.write(f"- {step}")
-                    if product['usage_instructions'].get('warnings'):
-                        st.warning(
-                            f"⚠️ **{t('warning')}** {product['usage_instructions'].get('warnings', '')}"
-                        )
-                else:
-                    # If it's a string, display it directly
-                    st.write(product['usage_instructions'])
+            # Create rows of two columns for products
+            # Create rows with 2 products each
+            for i in range(0, len(products_to_display), 2):
+                cols = st.columns(2)
 
-                # Skin Compatibility
-                st.subheader(f"👥 {t('suitable_for')}")
-                st.write(", ".join(product.get('suitable_for', product.get('skin_compatibility', []))))
+                # Add products to columns
+                for j in range(2):
+                    if i + j < len(products_to_display):
+                        product = products_to_display[i + j]
+                        with cols[j]:
+                            with st.expander(f"🏥 {product['name']} - ${product['price']}",
+                                             expanded=False):
+                                # Create two columns for product info and image
+                                col_info, col_img = st.columns([3, 1])
 
-                # Ingredient Analysis
-                st.subheader(f"🔬 {t('ingredient_analysis')}")
+                                with col_info:
+                                    # Basic Information
+                                    st.write(f"**{t('description')}** {product['description']}")
 
-                # Active Ingredients
-                st.write(f"**{t('active_ingredients')}**")
-                for ingredient, description in product['ingredient_analysis'][
-                    'active_ingredients'].items():
-                    st.markdown(f"**💊 {ingredient}**")
-                    st.write(description)
-                    st.divider()
+                                    # Ingredients Section
+                                    st.write(f"**🧪 {t('ingredients')}:** {', '.join(product['ingredients'])}")
 
-                # Potential Irritants
-                if product['ingredient_analysis']['potential_irritants']:
-                    st.write(f"**⚠️ {t('potential_irritants')}**")
-                    for ingredient, warning in product['ingredient_analysis'][
-                        'potential_irritants'].items():
-                        st.markdown(f"**⚠️ {ingredient}**")
-                        st.warning(warning)
+                                    # Key Benefits
+                                    st.write(f"**✨ {t('key_benefits')}:**")
+                                    for benefit in product['key_benefits']:
+                                        st.write(f"- {benefit}")
 
-                # Additional Information
-                st.write(f"**{t('additional_info')}**")
-                col1, col2 = st.columns(2)
-                with col1:
-                    st.write(
-                        f"**{t('ph_level')}** {product['ingredient_analysis'].get('ph_level', 'Not specified')}"
-                    )
-                    st.write(
-                        f"**{t('fragrance_free')}** {product['ingredient_analysis'].get('fragrance_free', 'Not specified')}"
-                    )
-                with col2:
-                    st.write(
-                        f"**{t('comedogenic')}** {product['ingredient_analysis']['comedogenic_rating']}/5"
-                    )
-                    st.caption(t("comedogenic_scale"))
+                                    # Price and product type
+                                    st.write(f"**💰 Price:** ${product['price']}")
+                                    if 'product_type' in product and product['product_type']:
+                                        st.write(f"**📦 Type:** {product['product_type']}")
 
-                # Certifications
-                if product['ingredient_analysis'].get('certifications'):
-                    st.write(f"**🏆 {t('certifications')}**")
-                    st.write(", ".join(
-                        product['ingredient_analysis']['certifications']))
+                                    # Other database fields
+                                    if 'ph_level' in product and product['ph_level']:
+                                        st.write(f"**🧪 pH Level:** {product['ph_level']}")
+                                    if 'comedogenic_rating' in product and product['comedogenic_rating']:
+                                        st.write(f"**⚖️ Comedogenic Rating:** {product['comedogenic_rating']}/5")
+                                    if 'fragrance' in product and product['fragrance']:
+                                        st.write(f"**🌸 Fragrance:** {product['fragrance']}")
+
+                                # Display product image in the right column
+                                with col_img:
+                                    # Check if image path exists in product data
+                                    if 'image_path' in product and product['image_path'] and os.path.exists(
+                                            product['image_path']):
+                                        try:
+                                            img = Image.open(product['image_path'])
+                                            st.image(img, caption=product['name'], use_container_width=True)
+                                        except Exception:
+                                            # Fallback if image cannot be loaded
+                                            st.image("https://via.placeholder.com/200x300?text=Product",
+                                                     caption=product['name'],
+                                                     use_container_width=True)
+                                    else:
+                                        # Display placeholder if no image available
+                                        st.image("https://via.placeholder.com/200x300?text=Product",
+                                                 caption=product['name'],
+                                                 use_container_width=True)
+
+                                    # Usage Instructions
+                                    st.write(f"**📝 {t('how_to_use')}:**")
+                                    if isinstance(product['usage_instructions'], dict):
+                                        # If it's a dictionary, access the keys
+                                        st.write(
+                                            f"**{t('frequency')}:** {product['usage_instructions'].get('frequency', 'Not specified')}"
+                                        )
+                                        if product['usage_instructions'].get('steps'):
+                                            st.write(f"**{t('steps')}:**")
+                                            for step in product['usage_instructions'].get('steps', []):
+                                                st.write(f"- {step}")
+                                        if product['usage_instructions'].get('warnings'):
+                                            st.warning(
+                                                f"⚠️ **{t('warning')}** {product['usage_instructions'].get('warnings', '')}"
+                                            )
+                                    else:
+                                        # If it's a string, display it directly
+                                        st.write(product['usage_instructions'])
+
+                                    # Skin Compatibility
+                                    suitable_for = ", ".join(
+                                        product.get('suitable_for', product.get('skin_compatibility', [])))
+                                    if suitable_for:
+                                        st.write(f"**👥 {t('suitable_for')}:** {suitable_for}")
+
+                                    # Display warnings if available
+                                    warnings = product.get('warnings')
+                                    if warnings:
+                                        st.warning(f"⚠️ **{t('warnings')}:** {warnings}")
+
+        except Exception as e:
+            st.error(f"Error loading products: {str(e)}")
+            import traceback
+            st.error(traceback.format_exc())
 
         # Doctor Directory section
         st.header(t("consult_professional"))
@@ -734,7 +774,8 @@ def main():
         st.info(t("doctors_in_radius").format(radius=search_radius))
 
         if not doctors_in_radius:
-            st.warning(f"No doctors found within {search_radius}km. Try increasing your search radius in settings.")
+            st.warning(
+                f"No doctors found within {search_radius}km. Try increasing your search radius in settings.")
 
         # Display doctors within radius
         for doctor in doctors_in_radius:
@@ -757,7 +798,7 @@ def main():
                     if st.button(t("send_message"), key=f"msg_btn_{doctor['name']}"):
                         # Start chat with this doctor
                         start_chat_with_doctor(doctor)
-                        st.rerun()  # Используем st.rerun() вместо st.experimental_rerun()
+                        st.rerun()
 
 
 if __name__ == "__main__":

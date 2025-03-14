@@ -326,4 +326,4 @@ def get_product_recommendations(condition):
         ]
     }
 
-    return products_database.get(condition, products_database["Healthy Skin"])
+    # return products_database.get(condition, products_database["Healthy Skin"])
