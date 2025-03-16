@@ -101,6 +101,7 @@ def show_auth_forms():
                 try:
                     from utils.auth import register_user
                     success, message = register_user(email, username, password, user_type)
+                    print(f"streamlit: {success, message}")
                     if success:
                         st.success(message)
                         st.session_state.authenticated = True

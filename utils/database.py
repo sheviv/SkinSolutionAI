@@ -68,17 +68,21 @@ class PublishedAnalysis(db.Model):
         return f'<User {self.username}>'
 
 
-# class Doctor(db.Model):
-#     id = db.Column(db.Integer, primary_key=True)
-#     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-#     speciality = db.Column(db.String(100))
-#     experience = db.Column(db.Integer)
-#     license_number = db.Column(db.String(50))
-#     address = db.Column(db.String(200))
-#     phone = db.Column(db.String(20))
-#
-#     def __repr__(self):
-#         return f'<Doctor {self.id}>'
+class Doctor(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    speciality = db.Column(db.String(100))
+    experience = db.Column(db.Integer)
+    license_number = db.Column(db.String(50))
+    address = db.Column(db.String(200))
+    phone = db.Column(db.String(20))
+
+    def __repr__(self):
+        return f'<Doctor {self.username}>'
+
+
 #
 #
 # class CosmeticFirm(db.Model):

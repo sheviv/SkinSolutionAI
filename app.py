@@ -1,6 +1,6 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, session
+from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_login import LoginManager, login_required, login_user, logout_user, current_user
-from utils.database import User, db, init_db
+from utils.database import User, db, init_db, Doctor
 from utils.auth import init_auth, register_user, login_user_with_credentials
 
 # Initialize Flask app
@@ -30,12 +30,56 @@ def register():
             flash('Passwords do not match!', 'error')
             return render_template('register.html')
 
-        success, message = register_user(email, username, password, role)
-        if success:
-            flash(message, 'success')
-            return redirect(url_for('login'))
+        if role in ["Doctor", "Врач"]:
+            try:
+                # Get doctor-specific fields
+                speciality = request.form.get('speciality', '')
+                experience = request.form.get('experience', '')
+                license_number = request.form.get('license_number', '')
+                address = request.form.get('address', '')
+                phone = request.form.get('phone', '')
+
+                # Validate required fields
+                if not speciality:
+                    flash('Speciality field is required', 'error')
+                    return render_template('register.html')
+                if not experience:
+                    flash('Experience field is required', 'error')
+                    return render_template('register.html')
+                if not license_number:
+                    flash('License number is required', 'error')
+                    return render_template('register.html')
+
+                # Create user with doctor data
+                doctor_data = {
+                    'speciality': speciality.strip(),
+                    'experience': int(experience) if experience.isdigit() else 0,
+                    'license_number': license_number.strip(),
+                    'address': address.strip() if address else '',
+                    'phone': phone.strip() if phone else ''
+                }
+                success, message = register_user(email, username, password, "Врач", doctor_data)
+                print(f"app.py_doctor_data: {doctor_data}")
+                print(f"app.py: {success, message}")
+                if success:
+                    flash(message, 'success')
+                    return redirect(url_for('login'))
+                else:
+                    flash(message, 'error')
+                    return render_template('register.html')
+            except Exception as e:
+                db.session.rollback()
+                flash(f"Error creating doctor profile: {str(e)}", 'error')
+                return render_template('register.html')
         else:
-            flash(message, 'error')
+            success, message = register_user(email, username, password, role)
+            print(f"app.py_2: {success, message}")
+            if success:
+                flash(message, 'success')
+                return redirect(url_for('login'))
+            else:
+                flash(message, 'error')
+                return render_template('register.html')
 
     return render_template('register.html')
 
@@ -50,29 +94,12 @@ def login():
         password = request.form.get('password')
 
         try:
-            # Find the user first
-            user = User.query.filter_by(email=email).first()
-
-            if user and user.check_password(password):
-                # Manually log in the user
-                login_user(user, remember=True)
-
-                # Update Streamlit session if needed
-                try:
-                    import streamlit as st
-                    st.session_state.authenticated = True
-                    st.session_state.user_id = user.id
-                    st.session_state.username = user.username
-                    st.session_state.registered = True
-                except Exception as e:
-                    print(f"Streamlit session error: {e}")
-                    # Ignore if Streamlit context is not available
-                    pass
-
+            success, message = login_user_with_credentials(email, password)
+            if success:
                 flash("Login successful", 'success')
                 return redirect(url_for('dashboard'))
             else:
-                flash("Invalid email or password", 'error')
+                flash(message, 'error')
         except Exception as e:
             flash(f"Login error: {str(e)}", 'error')
 

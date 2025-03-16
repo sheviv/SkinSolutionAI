@@ -17,7 +17,7 @@ def init_auth(app):
     login_manager.login_view = 'login'
 
 
-def register_user(email, username, password, user_type="Пациент"):
+def register_user(email, username, password, user_type="Пациент", doctor_data=None):
     """Register a new user"""
     # Check if user already exists
     existing_email = User.query.filter_by(email=email).first()
@@ -28,23 +28,42 @@ def register_user(email, username, password, user_type="Пациент"):
     if existing_username:
         return False, "Username already taken"
 
-    # Create new user
-    new_user = User(email=email, username=username, user_type=user_type)
-    new_user.set_password(password)
-
     try:
-        db.session.add(new_user)
-        # db.session.flush()  # Получить ID нового пользователя до коммита
-        #
-        # # Создаем соответствующую запись в зависимости от типа пользователя
-        # if user_type == "Врач":
-        #     from utils.database import Doctor
-        #     new_doctor = Doctor(user_id=new_user.id)
-        #     db.session.add(new_doctor)
-        # elif user_type == "Косметическая фирма":
-        #     from utils.database import CosmeticFirm
-        #     new_firm = CosmeticFirm(user_id=new_user.id)
-        #     db.session.add(new_firm)
+        if user_type in ["Врач", "Doctor"]:
+            if not doctor_data:
+                return False, "Doctor registration requires additional information"
+
+            if not doctor_data.get('speciality'):
+                return False, "Speciality field is required"
+            if not doctor_data.get('experience'):
+                return False, "Experience field is required"
+            if not doctor_data.get('license_number'):
+                return False, "License number is required"
+
+            # Create user first
+            new_user = User(email=email, username=username, user_type=user_type)
+            new_user.set_password(password)
+            db.session.add(new_user)
+            db.session.flush()  # Get the new user's ID
+
+            # Then create doctor with user reference
+            from utils.database import Doctor
+            new_doctor = Doctor(
+                user_id=new_user.id,
+                email=email,
+                username=username,
+                speciality=doctor_data.get('speciality', ''),
+                experience=int(doctor_data.get('experience', 0)) if doctor_data.get('experience') else 0,
+                license_number=doctor_data.get('license_number', ''),
+                address=doctor_data.get('address', ''),
+                phone=doctor_data.get('phone', '')
+            )
+            db.session.add(new_doctor)
+        else:
+            # Create regular user
+            new_user = User(email=email, username=username, user_type=user_type)
+            new_user.set_password(password)
+            db.session.add(new_user)
 
         db.session.commit()
         return True, "Registration successful"

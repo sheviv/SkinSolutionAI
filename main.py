@@ -97,7 +97,7 @@ def show_auth_forms():
                 import traceback
                 st.error(traceback.format_exc())
 
-    with tab2:
+    with (tab2):
         st.header("Регистрация")
         st.write("Пожалуйста, заполните форму ниже для регистрации.")
 
@@ -110,6 +110,20 @@ def show_auth_forms():
                                  ["Пациент", "Врач", "Косметическая фирма"],
                                  key="reg_user_type")
 
+        if user_type in ["Врач", "Doctor"]:
+            speciality = st.text_input("Специальность", key="reg_speciality")
+            experience = st.text_input("Опыт", key="reg_experience")
+            license_number = st.text_input("Лицензия", key="reg_license_number")
+            address = st.text_input("Лицензия", key="reg_address")
+            phone = st.text_input("Номер телефона", key="reg_phone")
+            doctor_data = {
+                'speciality': speciality.strip(),
+                'experience': int(experience) if experience.isdigit() else 0,
+                'license_number': license_number.strip(),
+                'address': address.strip() if address else '',
+                'phone': phone.strip() if phone else ''
+            }
+
         # Register button
         if st.button("Зарегистрироваться"):
             if password != confirm_password:
@@ -117,7 +131,10 @@ def show_auth_forms():
             else:
                 # Call the register_user function from utils.auth
                 try:
-                    success, message = register_user(email, username, password, user_type)
+                    if user_type in ["Врач", "Doctor"]:
+                        success, message = register_user(email, username, password, user_type, doctor_data)
+                    else:
+                        success, message = register_user(email, username, password, user_type)
                     if success:
                         # st.success(message)
                         st.session_state.registered = True  # Mark user as registered
@@ -444,6 +461,7 @@ def main():
         # Handle publish button functionality
         publish_button = st.button("Publish")
         if publish_button:
+            print(f"st.session_state.get('authenticated', False):{st.session_state.get('authenticated', False)}")
             if st.session_state.get('authenticated', False):
                 from utils.published_analysis import PublishedAnalysis
 

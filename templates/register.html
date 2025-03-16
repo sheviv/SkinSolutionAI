@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html>
 <head>
@@ -217,18 +216,57 @@
             </div>
             <div class="form-group">
                 <i class="icon-user-type"></i>
-                <select id="role" name="role" required class="form-select">
-                    <option value="Patient">Пациент</option>
-                    <option value="Doctor">Врач</option>
-                    <option value="Cosmetic">Косметическая фирма</option>
+                <select id="role" name="role" required class="form-select" onchange="toggleDoctorFields(this.value)">
+                    <option value="Пациент">Пациент</option>
+                    <option value="Врач">Врач</option>
+                    <option value="Косметическая фирма">Косметическая фирма</option>
                 </select>
+            </div>
+            <div id="doctorFields" style="display: none;">
+                <div class="form-group">
+                    <label>Специальность</label>
+                    <input type="text" name="speciality" id="speciality">
+                </div>
+                <div class="form-group">
+                    <label>Опыт работы (лет)</label>
+                    <input type="number" name="experience" id="experience">
+                </div>
+                <div class="form-group">
+                    <label>Номер лицензии</label>
+                    <input type="text" name="license_number" id="license_number">
+                </div>
+                <div class="form-group">
+                    <label>Адрес</label>
+                    <input type="text" name="address" id="address">
+                </div>
+                <div class="form-group">
+                    <label>Телефон</label>
+                    <input type="tel" name="phone" id="phone">
+                </div>
             </div>
             <button type="submit" class="btn">REGISTER</button>
         </form>
-        
+
         <div class="alt-link">
             <p>Already have an account? <a href="/login">LOGIN</a></p>
         </div>
     </div>
+    <script>
+        function toggleDoctorFields(role) {
+            const doctorFields = document.getElementById('doctorFields');
+            const isDoctor = role === 'Врач';
+            doctorFields.style.display = isDoctor ? 'block' : 'none';
+
+            const fields = ['speciality', 'experience', 'license_number'];
+            fields.forEach(field => {
+                document.getElementById(field).required = isDoctor;
+            });
+        }
+
+        // Call the function on page load to handle pre-selected values
+        document.addEventListener('DOMContentLoaded', function() {
+            toggleDoctorFields(document.getElementById('role').value);
+        });
+    </script>
 </body>
 </html>
