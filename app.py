@@ -38,6 +38,7 @@ def register():
                 license_number = request.form.get('license_number', '')
                 address = request.form.get('address', '')
                 phone = request.form.get('phone', '')
+                affordable_hours = request.form.get('affordable_hours', '')
 
                 # Validate required fields
                 if not speciality:
@@ -56,11 +57,10 @@ def register():
                     'experience': int(experience) if experience.isdigit() else 0,
                     'license_number': license_number.strip(),
                     'address': address.strip() if address else '',
-                    'phone': phone.strip() if phone else ''
+                    'phone': phone.strip() if phone else '',
+                    'affordable_hours': affordable_hours.strip() if phone else ''
                 }
                 success, message = register_user(email, username, password, "Врач", doctor_data)
-                print(f"app.py_doctor_data: {doctor_data}")
-                print(f"app.py: {success, message}")
                 if success:
                     flash(message, 'success')
                     return redirect(url_for('login'))
@@ -73,7 +73,6 @@ def register():
                 return render_template('register.html')
         else:
             success, message = register_user(email, username, password, role)
-            print(f"app.py_2: {success, message}")
             if success:
                 flash(message, 'success')
                 return redirect(url_for('login'))

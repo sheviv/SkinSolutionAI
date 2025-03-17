@@ -56,7 +56,8 @@ def register_user(email, username, password, user_type="Пациент", doctor_
                 experience=int(doctor_data.get('experience', 0)) if doctor_data.get('experience') else 0,
                 license_number=doctor_data.get('license_number', ''),
                 address=doctor_data.get('address', ''),
-                phone=doctor_data.get('phone', '')
+                phone=doctor_data.get('phone', ''),
+                affordable_hours=doctor_data.get('affordable_hours', '')
             )
             db.session.add(new_doctor)
         else:

@@ -78,6 +78,7 @@ class Doctor(db.Model):
     license_number = db.Column(db.String(50))
     address = db.Column(db.String(200))
     phone = db.Column(db.String(20))
+    affordable_hours = db.Column(db.String(100))
 
     def __repr__(self):
         return f'<Doctor {self.username}>'

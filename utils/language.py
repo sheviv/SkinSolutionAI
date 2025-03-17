@@ -110,7 +110,7 @@ TRANSLATIONS = {
         "recommended_actions": "Recommended Actions:",
 
         # ML model comparison
-        "model_comparison": "Machine Learning Model Comparison",
+        "preliminary_result": "Preliminary result",
         "most_reliable":
         "The {model} model has been selected as the most reliable based on confidence scores and is being used for final recommendations.",
 
@@ -271,7 +271,7 @@ TRANSLATIONS = {
         "recommended_actions": "Рекомендуемые действия:",
 
         # ML model comparison
-        "model_comparison": "Сравнение моделей машинного обучения",
+        "preliminary_result": "Предварительный результат",
         "most_reliable":
         "Модель {model} была выбрана как наиболее надежная на основе показателей уверенности и используется для окончательных рекомендаций.",
 

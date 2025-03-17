@@ -14,7 +14,7 @@ from utils.image_processing import process_image, analyze_skin, detect_problem_a
 from utils.ml_model import predict_skin_condition
 from utils.ai_analysis import get_image_analysis
 from utils.language import get_translation, init_language, change_language, LANGUAGES
-from utils.location import get_user_location_from_ip, get_doctors_in_radius
+from utils.location import get_user_location_from_ip, get_doctors_in_radius, get_all_doctors
 from utils.chat import init_chat, start_chat_with_doctor, render_chat_interface
 from utils.database import init_db, User, db
 from utils.auth import init_auth, register_user, login_user_with_credentials
@@ -69,7 +69,9 @@ def show_auth_forms():
 
         # Input fields for login
         login_email = st.text_input("Электронная почта", key="login_email")
-        login_password = st.text_input("Пароль", type="password", key="login_password")
+        login_password = st.text_input("Пароль",
+                                       type="password",
+                                       key="login_password")
 
         # Login button
         if st.button("Войти"):
@@ -89,7 +91,8 @@ def show_auth_forms():
                         st.session_state.registered = True
 
                         st.success("Вход выполнен успешно")
-                        st.rerun()  # Reload the page to display the main program
+                        st.rerun(
+                        )  # Reload the page to display the main program
                     else:
                         st.error("Неверный email или пароль")
             except Exception as e:
@@ -105,7 +108,9 @@ def show_auth_forms():
         email = st.text_input("Электронная почта", key="reg_email")
         username = st.text_input("Имя пользователя", key="reg_username")
         password = st.text_input("Пароль", type="password", key="reg_password")
-        confirm_password = st.text_input("Подтвердите пароль", type="password", key="reg_confirm_password")
+        confirm_password = st.text_input("Подтвердите пароль",
+                                         type="password",
+                                         key="reg_confirm_password")
         user_type = st.selectbox("Тип пользователя",
                                  ["Пациент", "Врач", "Косметическая фирма"],
                                  key="reg_user_type")
@@ -113,15 +118,18 @@ def show_auth_forms():
         if user_type in ["Врач", "Doctor"]:
             speciality = st.text_input("Специальность", key="reg_speciality")
             experience = st.text_input("Опыт", key="reg_experience")
-            license_number = st.text_input("Лицензия", key="reg_license_number")
+            license_number = st.text_input("Лицензия",
+                                           key="reg_license_number")
             address = st.text_input("Лицензия", key="reg_address")
             phone = st.text_input("Номер телефона", key="reg_phone")
+            affordable_hours = st.text_input("Рабочие часы", key="reg_hours")
             doctor_data = {
                 'speciality': speciality.strip(),
-                'experience': int(experience) if experience.isdigit() else 0,
                 'license_number': license_number.strip(),
-                'address': address.strip() if address else '',
-                'phone': phone.strip() if phone else ''
+                'phone': phone.strip(),
+                'affordable_hours': affordable_hours.strip(),
+                'experience': int(experience) if experience.isdigit() else 0,
+                'address': address.strip() if address else ''
             }
 
         # Register button
@@ -132,13 +140,16 @@ def show_auth_forms():
                 # Call the register_user function from utils.auth
                 try:
                     if user_type in ["Врач", "Doctor"]:
-                        success, message = register_user(email, username, password, user_type, doctor_data)
+                        success, message = register_user(
+                            email, username, password, user_type, doctor_data)
                     else:
-                        success, message = register_user(email, username, password, user_type)
+                        success, message = register_user(
+                            email, username, password, user_type)
                     if success:
                         # st.success(message)
                         st.session_state.registered = True  # Mark user as registered
-                        st.rerun()  # Reload the page to display the main program
+                        st.rerun(
+                        )  # Reload the page to display the main program
                     else:
                         st.error(message)
                 except Exception as e:
@@ -181,13 +192,14 @@ def main():
             # Language settings
             st.write(f"**{t('language')}**")
             language_options = list(LANGUAGES.keys())
-            current_lang_name = [name for name, code in LANGUAGES.items()
-                                 if code == st.session_state.language][0]
+            current_lang_name = [
+                name for name, code in LANGUAGES.items()
+                if code == st.session_state.language
+            ][0]
             selected_language = st.selectbox(
                 t("select_language"),
                 options=language_options,
-                index=language_options.index(current_lang_name)
-            )
+                index=language_options.index(current_lang_name))
 
             # Change language if user selects a different one
             selected_lang_code = LANGUAGES[selected_language]
@@ -199,7 +211,9 @@ def main():
 
             # Display current location
             user_location = st.session_state.user_location
-            st.write(f"{t('your_location')}: {user_location.get('city', '')}, {user_location.get('state', '')}")
+            st.write(
+                f"{t('your_location')}: {user_location.get('city', '')}, {user_location.get('state', '')}"
+            )
 
             # Option to enter location manually (simplified for demo)
             if st.button(t("detect_location")):
@@ -212,8 +226,7 @@ def main():
             selected_radius = st.select_slider(
                 "",
                 options=radius_options,
-                value=st.session_state.search_radius
-            )
+                value=st.session_state.search_radius)
 
             # Update search radius if changed
             if selected_radius != st.session_state.search_radius:
@@ -221,19 +234,23 @@ def main():
 
     st.title(t("app_title"))
     st.subheader(t("app_subtitle"))
+    # st.image("data/logo/1.png", width=100, caption=t("clinic_image_1"), use_container_width=True)
+    left_co, cent_co, last_co = st.columns(3)
+    with cent_co:
+        st.image("data/logo/1.png", width=400, caption=t("clinic_image_1"))
 
     # Display clinic images in columns
-    col1, col2 = st.columns(2)
-    with col1:
-        st.image(
-            "https://images.unsplash.com/photo-1598300188904-6287d52746ad",
-            caption=t("clinic_image_1"),
-            use_container_width=True)
-    with col2:
-        st.image(
-            "https://images.unsplash.com/photo-1690306815613-f839b74af330",
-            caption=t("clinic_image_2"),
-            use_container_width=True)
+    # col1, col2 = st.columns(2)
+    # with col1:
+    #     st.image(
+    #         "https://images.unsplash.com/photo-1598300188904-6287d52746ad",
+    #         caption=t("clinic_image_1"),
+    #         use_container_width=True)
+    # with col2:
+    #     st.image(
+    #         "https://images.unsplash.com/photo-1690306815613-f839b74af330",
+    #         caption=t("clinic_image_2"),
+    #         use_container_width=True)
 
     # Set API keys checked to true so we don't need to check again
     if not st.session_state.get('api_keys_checked'):
@@ -241,6 +258,21 @@ def main():
 
     # Image Upload Section
     st.header(t("upload_header"))
+
+    # mode analysis
+    # mode_type = st.radio("Select analysis mode:", [
+    #     "Standard Skin Analysis",
+    #     "Severe Skin Conditions and Child Skin Analysis"
+    # ],
+    #                      horizontal=True)
+    # st.session_state.selected_model_type = mode_type
+    # if mode_type == "Standard Skin Analysis":
+    #     st.info("Standard analysis model focuses on common skin conditions.")
+    # elif mode_type == "Severe Skin Conditions and Child Skin Analysis":
+    #     st.info(
+    #         "This specialized model analyzes severe skin conditions like psoriasis, eczema, rosacea, severe acne and Child skin analysis is optimized for detecting conditions common in children like atopic dermatitis, infantile acne, and cradle cap."
+    #     )
+
     st.info(t("upload_info"))
     uploaded_file = st.file_uploader(t("upload_button"),
                                      type=['jpg', 'jpeg', 'png'])
@@ -250,6 +282,15 @@ def main():
         file_bytes = np.asarray(bytearray(uploaded_file.read()),
                                 dtype=np.uint8)
         image = cv2.imdecode(file_bytes, 1)
+
+        # Check if image contains a body part
+        from utils.body_part_detection import is_body_part
+
+        if not is_body_part(image):
+            st.error(
+                "Please upload a photo of a body part (skin, face, hand, etc.). The uploaded image doesn't appear to contain a body part."
+            )
+            st.stop()
 
         with st.spinner("Processing image and analyzing skin condition..."):
             # Process and analyze image
@@ -272,15 +313,18 @@ def main():
             st.session_state.ensemble_predictions = ensemble_predictions
 
             # Use the most reliable model's prediction for recommendations
-            most_reliable_model = ensemble_predictions.get("most_reliable_model", "Random Forest")
+            most_reliable_model = ensemble_predictions.get(
+                "most_reliable_model", "Random Forest")
             ml_prediction = predict_skin_condition(skin_features) if most_reliable_model == "Random Forest" else \
                 ensemble_predictions[most_reliable_model]
 
             # Get model type from radio button selection (defaults to standard if not set)
-            selected_model_type = st.session_state.get('selected_model_type', "Standard Skin Analysis")
+            selected_model_type = st.session_state.get(
+                'selected_model_type', "Standard Skin Analysis")
 
             # Get AI analysis for the selected model type
-            ai_analysis = get_image_analysis(processed_image, selected_model_type)
+            ai_analysis = get_image_analysis(processed_image,
+                                             selected_model_type)
 
             # Store problem areas in session state for display
             st.session_state.problem_areas = problem_areas
@@ -290,24 +334,30 @@ def main():
         st.header(t("analysis_results"))
 
         # Add model selection for different use cases
-        model_type = st.radio(
-            "Select analysis mode:",
-            ["Standard Skin Analysis", "Severe Skin Conditions", "Child Skin Analysis"],
-            horizontal=True
-        )
+        model_type = st.radio("Select analysis mode:", [
+            "Standard Skin Analysis", "Severe Skin Conditions",
+            "Child Skin Analysis"
+        ],
+                              horizontal=True,
+                              key="analysis_mode_selection")
 
-        # Store selected model type in session state
-        st.session_state.selected_model_type = model_type
+        # Store selected model type in session state and trigger update
+        if "analysis_mode_selection" in st.session_state:
+            st.session_state.selected_model_type = st.session_state.analysis_mode_selection
 
         # Display appropriate explanation based on selected model
         if model_type == "Standard Skin Analysis":
-            st.info("Standard analysis model focuses on common skin conditions like acne, uneven tone, and dullness.")
+            st.info(
+                "Standard analysis model focuses on common skin conditions like acne, uneven tone, and dullness."
+            )
         elif model_type == "Severe Skin Conditions":
             st.info(
-                "This specialized model analyzes severe skin conditions like psoriasis, eczema, rosacea, and severe acne.")
+                "This specialized model analyzes severe skin conditions like psoriasis, eczema, rosacea, and severe acne."
+            )
         else:  # Child Skin Analysis
             st.info(
-                "Child skin analysis is optimized for detecting conditions common in children like atopic dermatitis, infantile acne, and cradle cap.")
+                "Child skin analysis is optimized for detecting conditions common in children like atopic dermatitis, infantile acne, and cradle cap."
+            )
 
         # Display the original and marked images side by side
         col_img1, col_img2 = st.columns(2)
@@ -320,30 +370,29 @@ def main():
 
         with col_img2:
             st.subheader(t("analysis_detected"))
-            st.image(marked_image,
-                     use_container_width=True)
+            st.image(marked_image, use_container_width=True)
 
         # Display problem area details
-        if problem_areas:
-            st.subheader(t("problem_areas"))
-            area_selection = st.selectbox(
-                t("select_area"),
-                options=[
-                    f"{area['type']} (Area {i + 1})"
-                    for i, area in enumerate(problem_areas)
-                ],
-                format_func=lambda x: x)
-
-            # Find the selected area
-            selected_index = int(
-                area_selection.split("Area ")[-1].split(")")[0]) - 1
-            selected_area = problem_areas[selected_index]
-
-            # Display details about the selected area
-            st.info(f"**{t('area_type')}** {selected_area['type']}")
-            st.info(f"**{t('area_severity')}** {selected_area['severity']}")
-            st.info(f"**{t('area_size')}** {selected_area['size']} pixels")
-            st.info(f"**{t('area_description')}** {selected_area['description']}")
+        # if problem_areas:
+        #     st.subheader(t("problem_areas"))
+        #     area_selection = st.selectbox(
+        #         t("select_area"),
+        #         options=[
+        #             f"{area['type']} (Area {i + 1})"
+        #             for i, area in enumerate(problem_areas)
+        #         ],
+        #         format_func=lambda x: x)
+        #
+        #     # Find the selected area
+        #     selected_index = int(
+        #         area_selection.split("Area ")[-1].split(")")[0]) - 1
+        #     selected_area = problem_areas[selected_index]
+        #
+        #     # Display details about the selected area
+        #     st.info(f"**{t('area_type')}** {selected_area['type']}")
+        #     st.info(f"**{t('area_severity')}** {selected_area['severity']}")
+        #     st.info(f"**{t('area_size')}** {selected_area['size']} pixels")
+        #     st.info(f"**{t('area_description')}** {selected_area['description']}")
 
         # Create three columns for different analyses
         col1, col2, col3 = st.columns(3)
@@ -356,84 +405,72 @@ def main():
                 ensemble_preds = st.session_state.ensemble_predictions
 
                 # Determine which model to show based on user selection
-                selected_model_type = st.session_state.get('selected_model_type', "Standard Skin Analysis")
+                selected_model_type = st.session_state.get(
+                    'selected_model_type', "Standard Skin Analysis")
 
                 if selected_model_type == "Standard Skin Analysis":
                     # Use standard models (Random Forest, Gradient Boosting, SVM)
-                    standard_models = [name for name in ensemble_preds.keys()
-                                       if name not in ["most_reliable_model", "Severe Conditions", "Child Skin"]]
+                    standard_models = [
+                        name for name in ensemble_preds.keys() if name not in [
+                            "most_reliable_model", "Severe Conditions",
+                            "Child Skin"
+                        ]
+                    ]
 
                     if standard_models:
-                        most_reliable_model = ensemble_preds.get("most_reliable_model", "Random Forest")
-                        if most_reliable_model not in standard_models:
-                            most_reliable_model = standard_models[0]
+                        # Find model with highest confidence
+                        highest_confidence_model = None
+                        highest_confidence = 0
 
-                        st.info(f"**{t('primary_model')}** {most_reliable_model} {t('used_for_recommendations')}")
+                        for model_name in standard_models:
+                            if model_name in ensemble_preds:
+                                confidence = float(ensemble_preds[model_name]['confidence'].rstrip('%'))
+                                if confidence > highest_confidence:
+                                    highest_confidence = confidence
+                                    highest_confidence_model = model_name
 
-                        # Add a model selection dropdown for standard models
-                        selected_model = st.selectbox(t("view_other_models"), standard_models)
-                    else:
-                        selected_model = "Random Forest"
-                        st.warning("Standard skin analysis models not available")
+                        if highest_confidence_model:
+                            model_result = ensemble_preds[highest_confidence_model]
+                            st.markdown(f"### Standard Skin Analysis")
+                            st.write(f"**{t('condition')}** {model_result['condition']}")
+                            st.write(f"**{t('confidence')}** {model_result['confidence']}")
+
+                            if 'key_factors' in model_result:
+                                st.write(f"**{t('key_factors')}**")
+                                for factor, importance in model_result['key_factors']:
+                                    st.write(f"- {factor}: {importance:.2%}")
 
                 elif selected_model_type == "Severe Skin Conditions":
-                    # Use severe conditions model
+                    # Display severe conditions model results
                     if "Severe Conditions" in ensemble_preds:
-                        selected_model = "Severe Conditions"
-                        st.info("Using specialized model for severe skin conditions analysis")
+                        st.markdown("### Severe Conditions Analysis")
+                        model_result = ensemble_preds["Severe Conditions"]
+                        st.write(f"**{t('condition')}** {model_result['condition']}")
+                        st.write(f"**{t('confidence')}** {model_result['confidence']}")
+                        if 'key_factors' in model_result:
+                            st.write(f"**{t('key_factors')}**")
+                            for factor, importance in model_result['key_factors']:
+                                st.write(f"- {factor}: {importance:.2%}")
                     else:
-                        # Fallback to standard model
-                        selected_model = ensemble_preds.get("most_reliable_model", "Random Forest")
-                        st.warning("Severe conditions model not available, using standard model")
+                        st.warning("Severe conditions model not available")
 
                 else:  # Child Skin Analysis
-                    # Use child skin model
+                    # Display child skin model results
                     if "Child Skin" in ensemble_preds:
-                        selected_model = "Child Skin"
-                        st.info("Using specialized model for children's skin analysis")
+                        st.markdown("### Child Skin Analysis")
+                        model_result = ensemble_preds["Child Skin"]
+                        st.write(f"**{t('condition')}** {model_result['condition']}")
+                        st.write(f"**{t('confidence')}** {model_result['confidence']}")
+                        if 'key_factors' in model_result:
+                            st.write(f"**{t('key_factors')}**")
+                            for factor, importance in model_result['key_factors']:
+                                st.write(f"- {factor}: {importance:.2%}")
                     else:
-                        # Fallback to standard model
-                        selected_model = ensemble_preds.get("most_reliable_model", "Random Forest")
-                        st.warning("Child skin model not available, using standard model")
-
-                # Display the selected model's prediction
-                model_result = {}
-                if selected_model in ensemble_preds:
-                    model_result = ensemble_preds[selected_model]
-
-                    # Display model type badge
-                    model_type = model_result.get('model_type', 'standard')
-                    if model_type == 'severe_conditions':
-                        st.markdown("🔍 **Severe Conditions Analysis**")
-                    elif model_type == 'child_skin':
-                        st.markdown("👶 **Child Skin Analysis**")
-
-                    st.write(f"**{t('condition')}** {model_result['condition']}")
-                    st.write(f"**{t('confidence')}** {model_result['confidence']}")
-
-                # Display model probabilities as a bar chart
-                if model_result and 'probabilities' in model_result:
-                    import altair as alt
-                    import pandas as pd
-
-                    # Convert probabilities to dataframe for visualization
-                    prob_data = []
-                    for condition, prob_str in model_result['probabilities'].items():
-                        prob_value = float(prob_str.rstrip('%'))
-                        prob_data.append({"Condition": condition, "Probability": prob_value})
-
-                    if prob_data:
-                        df = pd.DataFrame(prob_data)
-                        chart = alt.Chart(df).mark_bar().encode(
-                            x=alt.X('Probability:Q', title='Probability (%)'),
-                            y=alt.Y('Condition:N', title='Skin Condition'),
-                            color=alt.Color('Condition:N', legend=None),
-                            tooltip=['Condition', 'Probability']
-                        ).properties(height=min(len(prob_data) * 40, 300))
-                        st.altair_chart(chart, use_container_width=True)
+                        st.warning("Child skin model not available")
             else:
                 st.write(f"**{t('condition')}** {ml_prediction['condition']}")
-                st.write(f"**{t('confidence')}** {ml_prediction['confidence']}")
+                st.write(
+                    f"**{t('confidence')}** {ml_prediction['confidence']}")
 
                 st.write(f"**{t('key_factors')}**")
                 if 'key_factors' in ml_prediction:
@@ -441,7 +478,8 @@ def main():
                         st.write(f"- {factor}: {importance:.2%}")
 
                 with st.expander(t("detailed_probabilities")):
-                    for condition, prob in ml_prediction['probabilities'].items():
+                    for condition, prob in ml_prediction[
+                        'probabilities'].items():
                         st.write(f"- {condition}: {prob}")
 
         with col2:
@@ -461,7 +499,9 @@ def main():
         # Handle publish button functionality
         publish_button = st.button("Publish")
         if publish_button:
-            print(f"st.session_state.get('authenticated', False):{st.session_state.get('authenticated', False)}")
+            print(
+                f"st.session_state.get('authenticated', False):{st.session_state.get('authenticated', False)}"
+            )
             if st.session_state.get('authenticated', False):
                 from utils.published_analysis import PublishedAnalysis
 
@@ -474,14 +514,77 @@ def main():
 
                 # Save the analysis
                 analysis_id = PublishedAnalysis.save_analysis(
-                    st.session_state.user_id,
-                    analysis_data
-                )
+                    st.session_state.user_id, analysis_data)
 
                 # Show success message with ID
-                st.success(f"Analysis published successfully! Share ID: {analysis_id}")
+                st.success(
+                    f"Analysis published successfully! Share ID: {analysis_id}"
+                )
             else:
                 st.warning("Please log in to publish your analysis.")
+
+        # Detailed Problem Area Analysis
+        # st.header(t("comprehensive_analysis"))
+        # if problem_areas:
+        #     problem_tabs = st.tabs([
+        #         f"{area['type']} {i + 1}"
+        #         for i, area in enumerate(problem_areas)
+        #     ])
+        #
+        #     for i, (tab, area) in enumerate(zip(problem_tabs, problem_areas)):
+        #         with tab:
+        #             col1, col2 = st.columns([1, 2])
+        #
+        #             with col1:
+        #                 # Extract the region of interest
+        #                 x, y, w, h = area['bbox']
+        #                 x, y, w, h = max(0, x), max(0, y), w, h
+        #
+        #                 # Check if coordinates are valid
+        #                 x_end = min(x + w, processed_image.shape[1])
+        #                 y_end = min(y + h, processed_image.shape[0])
+        #
+        #                 # Extract and display the region of interest
+        #                 if x < x_end and y < y_end:
+        #                     roi = processed_image[y:y_end, x:x_end]
+        #                     if roi.size > 0:  # Make sure the ROI is not empty
+        #                         # Increase quality by using full image size
+        #                         st.image(roi,
+        #                                  use_container_width=True,
+        #                                  clamp=True)
+        #
+        #             with col2:
+        #                 st.markdown(f"### {area['type']} {t('details')}")
+        #                 st.markdown(f"**{t('area_severity')}** {area['severity']}")
+        #                 st.markdown(f"**{t('area_size')}** {area['size']} pixels")
+        #                 st.markdown(f"**{t('area_description')}**")
+        #                 st.markdown(area['description'])
+        #
+        #                 # Add recommendations based on the area type
+        #                 st.markdown(f"### {t('recommended_actions')}")
+        #                 if "Spot" in area['type']:
+        #                     st.markdown(
+        #                         f"- {t('rec_niacinamide')}"
+        #                     )
+        #                     st.markdown(
+        #                         f"- {t('rec_sunscreen')}"
+        #                     )
+        #                 elif "Redness" in area['type']:
+        #                     st.markdown(
+        #                         f"- {t('rec_centella')}"
+        #                     )
+        #                     st.markdown(
+        #                         f"- {t('rec_avoid_hot')}"
+        #                     )
+        #                 elif "Texture" in area['type']:
+        #                     st.markdown(
+        #                         f"- {t('rec_gentle_exfoliation')}"
+        #                     )
+        #                     st.markdown(
+        #                         f"- {t('rec_retinol')}"
+        #                     )
+        # else:
+        #     st.info(t("no_problem_areas"))
 
         # Display Detected characteristics with expanded metrics and descriptions
         st.subheader(t("skin_metrics"))
@@ -498,12 +601,36 @@ def main():
 
         # Add reference ranges for interpretation with translated category names
         reference_ranges = {
-            "Tone Uniformity": {t("uneven"): (0, 65), t("moderate"): (65, 85), t("even"): (85, 100)},
-            "Brightness": {t("dull"): (0, 50), t("moderate"): (50, 75), t("bright"): (75, 100)},
-            "Texture": {t("smooth"): (0, 30), t("moderate"): (30, 60), t("rough"): (60, 100)},
-            "Spots Detected": {t("few"): (0, 3), t("moderate"): (3, 7), t("many"): (7, 100)},
-            "Redness": {t("low"): (0, 30), t("moderate"): (30, 60), t("high"): (60, 100)},
-            "Pigmentation": {t("even"): (0, 25), t("moderate"): (25, 50), t("uneven"): (50, 100)}
+            "Tone Uniformity": {
+                t("uneven"): (0, 65),
+                t("moderate"): (65, 85),
+                t("even"): (85, 100)
+            },
+            "Brightness": {
+                t("dull"): (0, 50),
+                t("moderate"): (50, 75),
+                t("bright"): (75, 100)
+            },
+            "Texture": {
+                t("smooth"): (0, 30),
+                t("moderate"): (30, 60),
+                t("rough"): (60, 100)
+            },
+            "Spots Detected": {
+                t("few"): (0, 3),
+                t("moderate"): (3, 7),
+                t("many"): (7, 100)
+            },
+            "Redness": {
+                t("low"): (0, 30),
+                t("moderate"): (30, 60),
+                t("high"): (60, 100)
+            },
+            "Pigmentation": {
+                t("even"): (0, 25),
+                t("moderate"): (25, 50),
+                t("uneven"): (50, 100)
+            }
         }
 
         # Function to get interpretation based on value and ranges
@@ -519,12 +646,17 @@ def main():
 
         # Create expandable sections for each metric
         for feature, value in skin_features.items():
-            numeric_value = float(value) if isinstance(value, (float, int)) else 0
+            numeric_value = float(value) if isinstance(value,
+                                                       (float, int)) else 0
             interpretation = get_interpretation(feature, numeric_value)
 
-            with st.expander(f"{feature}: {numeric_value:.1f} ({interpretation})", expanded=False):
+            with st.expander(
+                    f"{feature}: {numeric_value:.1f} ({interpretation})",
+                    expanded=False):
                 # Description
-                st.markdown(f"**{t('description')}** {metric_descriptions.get(feature, 'No description available')}")
+                st.markdown(
+                    f"**{t('description')}** {metric_descriptions.get(feature, 'No description available')}"
+                )
 
                 # Reference range visualization
                 if feature in reference_ranges:
@@ -536,13 +668,19 @@ def main():
 
                     with col1:
                         st.markdown(f"**{categories[0]}**")
-                        st.markdown(f"{ranges[categories[0]][0]} - {ranges[categories[0]][1]}")
+                        st.markdown(
+                            f"{ranges[categories[0]][0]} - {ranges[categories[0]][1]}"
+                        )
                     with col2:
                         st.markdown(f"**{categories[1]}**")
-                        st.markdown(f"{ranges[categories[1]][0]} - {ranges[categories[1]][1]}")
+                        st.markdown(
+                            f"{ranges[categories[1]][0]} - {ranges[categories[1]][1]}"
+                        )
                     with col3:
                         st.markdown(f"**{categories[2]}**")
-                        st.markdown(f"{ranges[categories[2]][0]} - {ranges[categories[2]][1]}")
+                        st.markdown(
+                            f"{ranges[categories[2]][0]} - {ranges[categories[2]][1]}"
+                        )
 
                     # Progress bar to visualize where the value falls in the range
                     st.progress(min(numeric_value / 100.0, 1.0))
@@ -571,80 +709,26 @@ def main():
                     st.markdown(f"- {t('rec_continue')}")
                     st.markdown(f"- {t('rec_prevention')}")
 
-        # Detailed Problem Area Analysis
-        st.header(t("comprehensive_analysis"))
-        if problem_areas:
-            problem_tabs = st.tabs([
-                f"{area['type']} {i + 1}"
-                for i, area in enumerate(problem_areas)
-            ])
-
-            for i, (tab, area) in enumerate(zip(problem_tabs, problem_areas)):
-                with tab:
-                    col1, col2 = st.columns([1, 2])
-
-                    with col1:
-                        # Extract the region of interest
-                        x, y, w, h = area['bbox']
-                        x, y, w, h = max(0, x), max(0, y), w, h
-
-                        # Check if coordinates are valid
-                        x_end = min(x + w, processed_image.shape[1])
-                        y_end = min(y + h, processed_image.shape[0])
-
-                        # Extract and display the region of interest
-                        if x < x_end and y < y_end:
-                            roi = processed_image[y:y_end, x:x_end]
-                            if roi.size > 0:  # Make sure the ROI is not empty
-                                # Increase quality by using full image size
-                                st.image(roi,
-                                         use_container_width=True,
-                                         clamp=True)
-
-                    with col2:
-                        st.markdown(f"### {area['type']} {t('details')}")
-                        st.markdown(f"**{t('area_severity')}** {area['severity']}")
-                        st.markdown(f"**{t('area_size')}** {area['size']} pixels")
-                        st.markdown(f"**{t('area_description')}**")
-                        st.markdown(area['description'])
-
-                        # Add recommendations based on the area type
-                        st.markdown(f"### {t('recommended_actions')}")
-                        if "Spot" in area['type']:
-                            st.markdown(
-                                f"- {t('rec_niacinamide')}"
-                            )
-                            st.markdown(
-                                f"- {t('rec_sunscreen')}"
-                            )
-                        elif "Redness" in area['type']:
-                            st.markdown(
-                                f"- {t('rec_centella')}"
-                            )
-                            st.markdown(
-                                f"- {t('rec_avoid_hot')}"
-                            )
-                        elif "Texture" in area['type']:
-                            st.markdown(
-                                f"- {t('rec_gentle_exfoliation')}"
-                            )
-                            st.markdown(
-                                f"- {t('rec_retinol')}"
-                            )
-        else:
-            st.info(t("no_problem_areas"))
-
         # Model Comparison Section
-        st.header(t("model_comparison"))
+        st.header(t("preliminary_result"))
         if 'ensemble_predictions' in st.session_state:
             ensemble_preds = st.session_state.ensemble_predictions
-            model_names = [name for name in ensemble_preds.keys() if name != "most_reliable_model"]
+            selected_model_type = st.session_state.get('selected_model_type', "Standard Skin Analysis")
+
+            # Define which models to show based on selected type
+            standard_models = ["Random Forest", "Gradient Boosting", "SVM"]
+            if selected_model_type == "Standard Skin Analysis":
+                models_to_show = standard_models
+            elif selected_model_type == "Severe Skin Conditions":
+                models_to_show = standard_models + ["Severe Conditions"]
+            else:  # Child Skin Analysis
+                models_to_show = standard_models + ["Child Skin"]
 
             # Create a comparison table
             import pandas as pd
 
             comparison_data = []
-            for model_name in model_names:
+            for model_name in models_to_show:
                 if model_name in ensemble_preds:
                     model_data = ensemble_preds[model_name]
                     comparison_data.append({
@@ -659,7 +743,8 @@ def main():
 
                 # Highlight the most reliable model
                 most_reliable = ensemble_preds.get("most_reliable_model", "Random Forest")
-                st.success(t("most_reliable").format(model=most_reliable))
+                if most_reliable in models_to_show:
+                    st.success(t("most_reliable").format(model=most_reliable))
 
         # Product Recommendations section
         st.header(t("recommended_products"))
@@ -676,7 +761,9 @@ def main():
 
             # Show message if there are more products than displayed
             if len(all_products) > max_products:
-                st.info(f"Showing {max_products} of {len(all_products)} total products.")
+                st.info(
+                    f"Showing {max_products} of {len(all_products)} total products."
+                )
 
             if not products_to_display:
                 st.warning("No products found in the database.")
@@ -691,17 +778,22 @@ def main():
                     if i + j < len(products_to_display):
                         product = products_to_display[i + j]
                         with cols[j]:
-                            with st.expander(f"🏥 {product['name']} - ${product['price']}",
-                                             expanded=False):
+                            with st.expander(
+                                    f"🏥 {product['name']} - ${product['price']}",
+                                    expanded=False):
                                 # Create two columns for product info and image
                                 col_info, col_img = st.columns([3, 1])
 
                                 with col_info:
                                     # Basic Information
-                                    st.write(f"**{t('description')}** {product['description']}")
+                                    st.write(
+                                        f"**{t('description')}** {product['description']}"
+                                    )
 
                                     # Ingredients Section
-                                    st.write(f"**🧪 {t('ingredients')}:** {', '.join(product['ingredients'])}")
+                                    st.write(
+                                        f"**🧪 {t('ingredients')}:** {', '.join(product['ingredients'])}"
+                                    )
 
                                     # Key Benefits
                                     st.write(f"**✨ {t('key_benefits')}:**")
@@ -709,49 +801,74 @@ def main():
                                         st.write(f"- {benefit}")
 
                                     # Price and product type
-                                    st.write(f"**💰 Price:** ${product['price']}")
-                                    if 'product_type' in product and product['product_type']:
-                                        st.write(f"**📦 Type:** {product['product_type']}")
+                                    st.write(
+                                        f"**💰 Price:** ${product['price']}")
+                                    if 'product_type' in product and product[
+                                        'product_type']:
+                                        st.write(
+                                            f"**📦 Type:** {product['product_type']}"
+                                        )
 
                                     # Other database fields
-                                    if 'ph_level' in product and product['ph_level']:
-                                        st.write(f"**🧪 pH Level:** {product['ph_level']}")
-                                    if 'comedogenic_rating' in product and product['comedogenic_rating']:
-                                        st.write(f"**⚖️ Comedogenic Rating:** {product['comedogenic_rating']}/5")
-                                    if 'fragrance' in product and product['fragrance']:
-                                        st.write(f"**🌸 Fragrance:** {product['fragrance']}")
+                                    if 'ph_level' in product and product[
+                                        'ph_level']:
+                                        st.write(
+                                            f"**🧪 pH Level:** {product['ph_level']}"
+                                        )
+                                    if 'comedogenic_rating' in product and product[
+                                        'comedogenic_rating']:
+                                        st.write(
+                                            f"**⚖️ Comedogenic Rating:** {product['comedogenic_rating']}/5"
+                                        )
+                                    if 'fragrance' in product and product[
+                                        'fragrance']:
+                                        st.write(
+                                            f"**🌸 Fragrance:** {product['fragrance']}"
+                                        )
 
                                 # Display product image in the right column
                                 with col_img:
                                     # Check if image path exists in product data
-                                    if 'image_path' in product and product['image_path'] and os.path.exists(
-                                            product['image_path']):
+                                    if 'image_path' in product and product[
+                                        'image_path'] and os.path.exists(
+                                        product['image_path']):
                                         try:
-                                            img = Image.open(product['image_path'])
-                                            st.image(img, caption=product['name'], use_container_width=True)
-                                        except Exception:
-                                            # Fallback if image cannot be loaded
-                                            st.image("https://via.placeholder.com/200x300?text=Product",
+                                            img = Image.open(
+                                                product['image_path'])
+                                            st.image(img,
                                                      caption=product['name'],
                                                      use_container_width=True)
+                                        except Exception:
+                                            # Fallback if image cannot be loaded
+                                            st.image(
+                                                "https://via.placeholder.com/200x300?text=Product",
+                                                caption=product['name'],
+                                                use_container_width=True)
                                     else:
                                         # Display placeholder if no image available
-                                        st.image("https://via.placeholder.com/200x300?text=Product",
-                                                 caption=product['name'],
-                                                 use_container_width=True)
+                                        st.image(
+                                            "https://via.placeholder.com/200x300?text=Product",
+                                            caption=product['name'],
+                                            use_container_width=True)
 
                                     # Usage Instructions
                                     st.write(f"**📝 {t('how_to_use')}:**")
-                                    if isinstance(product['usage_instructions'], dict):
+                                    if isinstance(
+                                            product['usage_instructions'],
+                                            dict):
                                         # If it's a dictionary, access the keys
                                         st.write(
                                             f"**{t('frequency')}:** {product['usage_instructions'].get('frequency', 'Not specified')}"
                                         )
-                                        if product['usage_instructions'].get('steps'):
+                                        if product['usage_instructions'].get(
+                                                'steps'):
                                             st.write(f"**{t('steps')}:**")
-                                            for step in product['usage_instructions'].get('steps', []):
+                                            for step in product[
+                                                'usage_instructions'].get(
+                                                'steps', []):
                                                 st.write(f"- {step}")
-                                        if product['usage_instructions'].get('warnings'):
+                                        if product['usage_instructions'].get(
+                                                'warnings'):
                                             st.warning(
                                                 f"⚠️ **{t('warning')}** {product['usage_instructions'].get('warnings', '')}"
                                             )
@@ -761,14 +878,21 @@ def main():
 
                                     # Skin Compatibility
                                     suitable_for = ", ".join(
-                                        product.get('suitable_for', product.get('skin_compatibility', [])))
+                                        product.get(
+                                            'suitable_for',
+                                            product.get(
+                                                'skin_compatibility', [])))
                                     if suitable_for:
-                                        st.write(f"**👥 {t('suitable_for')}:** {suitable_for}")
+                                        st.write(
+                                            f"**👥 {t('suitable_for')}:** {suitable_for}"
+                                        )
 
                                     # Display warnings if available
                                     warnings = product.get('warnings')
                                     if warnings:
-                                        st.warning(f"⚠️ **{t('warnings')}:** {warnings}")
+                                        st.warning(
+                                            f"⚠️ **{t('warnings')}:** {warnings}"
+                                        )
 
         except Exception as e:
             st.error(f"Error loading products: {str(e)}")
@@ -785,15 +909,17 @@ def main():
         search_radius = st.session_state.search_radius
 
         # Get all doctors and filter by radius
-        all_doctors = get_nearby_doctors()
-        doctors_in_radius = get_doctors_in_radius(user_lat, user_lon, search_radius, all_doctors)
+        all_doctors = get_all_doctors()
+        doctors_in_radius = get_doctors_in_radius(user_lat, user_lon,
+                                                  search_radius, all_doctors)
 
         # Display radius information
         st.info(t("doctors_in_radius").format(radius=search_radius))
 
         if not doctors_in_radius:
             st.warning(
-                f"No doctors found within {search_radius}km. Try increasing your search radius in settings.")
+                f"No doctors found within {search_radius}km. Try increasing your search radius in settings."
+            )
 
         # Display doctors within radius
         for doctor in doctors_in_radius:
@@ -802,18 +928,21 @@ def main():
                     expanded=False):
 
                 col1, col2 = st.columns([2, 1])
-
                 with col1:
-                    st.write(f"**{t('experience')}** {doctor['experience']} years")
+                    st.write(
+                        f"**{t('experience')}** {doctor['experience']} years")
                     st.write(f"**{t('location')}** {doctor['location']}")
                     st.write(f"**{t('contact')}** {doctor['contact']}")
                     st.write(f"**{t('email')}** {doctor['email']}")
-                    st.write(f"**{t('available_hours')}** {doctor['available_hours']}")
+                    st.write(
+                        f"**{t('available_hours')}** {doctor['available_hours']}"
+                    )
                     st.write(f"**{t('distance')}** {doctor['distance']} km")
 
                 with col2:
                     # Add button to open chat with this doctor
-                    if st.button(t("send_message"), key=f"msg_btn_{doctor['name']}"):
+                    if st.button(t("send_message"),
+                                 key=f"msg_btn_{doctor['name']}"):
                         # Start chat with this doctor
                         start_chat_with_doctor(doctor)
                         st.rerun()

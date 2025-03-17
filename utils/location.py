@@ -70,13 +70,27 @@ def calculate_distance(lat1, lon1, lat2, lon2):
     return c * r
 
 
+from utils.database import Doctor, db
+
+def get_all_doctors():
+    """Get all doctors from database"""
+    doctors = Doctor.query.all()
+    return [{
+        'name': doc.username,
+        'speciality': doc.speciality,
+        'experience': doc.experience,
+        'location': doc.address,
+        'contact': doc.phone,
+        'email': doc.email,
+        'available_hours': doc.affordable_hours
+    } for doc in doctors]
+
 def get_doctors_in_radius(user_lat, user_lon, radius_km, all_doctors):
     """Filter doctors within specified radius of user location."""
     doctors_in_radius = []
 
     for doctor in all_doctors:
-        # In a real app, you would have actual coordinates for each doctor
-        # For demo, we're generating random nearby coordinates
+        # Generate coordinates for demo purposes
         if "latitude" not in doctor or "longitude" not in doctor:
             # Generate random nearby coordinates for demo
             doctor["latitude"] = user_lat + (random.random() - 0.5) * 0.1
