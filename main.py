@@ -12,7 +12,9 @@ sys.path.append(current_dir)
 
 from utils.image_processing import process_image, analyze_skin, detect_problem_areas
 from utils.ml_model import predict_skin_condition
-from utils.ai_analysis import get_image_analysis
+from utils.ml_ensemble import predict_with_ensemble
+from utils.specialized_models import predict_severe_condition, predict_child_skin_condition, predict_skin_problems, predict_skin_care
+from utils.ai_analysis import get_image_analysis # Modification needed here to remove Anthropic functions from this file.
 from utils.language import get_translation, init_language, change_language, LANGUAGES
 from utils.location import get_user_location_from_ip, get_doctors_in_radius, get_all_doctors
 from utils.chat import init_chat, start_chat_with_doctor, render_chat_interface
@@ -239,18 +241,6 @@ def main():
     with cent_co:
         st.image("data/logo/1.png", width=400, caption=t("clinic_image_1"))
 
-    # Display clinic images in columns
-    # col1, col2 = st.columns(2)
-    # with col1:
-    #     st.image(
-    #         "https://images.unsplash.com/photo-1598300188904-6287d52746ad",
-    #         caption=t("clinic_image_1"),
-    #         use_container_width=True)
-    # with col2:
-    #     st.image(
-    #         "https://images.unsplash.com/photo-1690306815613-f839b74af330",
-    #         caption=t("clinic_image_2"),
-    #         use_container_width=True)
 
     # Set API keys checked to true so we don't need to check again
     if not st.session_state.get('api_keys_checked'):
@@ -258,20 +248,6 @@ def main():
 
     # Image Upload Section
     st.header(t("upload_header"))
-
-    # mode analysis
-    # mode_type = st.radio("Select analysis mode:", [
-    #     "Standard Skin Analysis",
-    #     "Severe Skin Conditions and Child Skin Analysis"
-    # ],
-    #                      horizontal=True)
-    # st.session_state.selected_model_type = mode_type
-    # if mode_type == "Standard Skin Analysis":
-    #     st.info("Standard analysis model focuses on common skin conditions.")
-    # elif mode_type == "Severe Skin Conditions and Child Skin Analysis":
-    #     st.info(
-    #         "This specialized model analyzes severe skin conditions like psoriasis, eczema, rosacea, severe acne and Child skin analysis is optimized for detecting conditions common in children like atopic dermatitis, infantile acne, and cradle cap."
-    #     )
 
     st.info(t("upload_info"))
     uploaded_file = st.file_uploader(t("upload_button"),
@@ -372,29 +348,7 @@ def main():
             st.subheader(t("analysis_detected"))
             st.image(marked_image, use_container_width=True)
 
-        # Display problem area details
-        # if problem_areas:
-        #     st.subheader(t("problem_areas"))
-        #     area_selection = st.selectbox(
-        #         t("select_area"),
-        #         options=[
-        #             f"{area['type']} (Area {i + 1})"
-        #             for i, area in enumerate(problem_areas)
-        #         ],
-        #         format_func=lambda x: x)
-        #
-        #     # Find the selected area
-        #     selected_index = int(
-        #         area_selection.split("Area ")[-1].split(")")[0]) - 1
-        #     selected_area = problem_areas[selected_index]
-        #
-        #     # Display details about the selected area
-        #     st.info(f"**{t('area_type')}** {selected_area['type']}")
-        #     st.info(f"**{t('area_severity')}** {selected_area['severity']}")
-        #     st.info(f"**{t('area_size')}** {selected_area['size']} pixels")
-        #     st.info(f"**{t('area_description')}** {selected_area['description']}")
-
-        # Create three columns for different analyses
+        # Create two columns for different analyses
         col1, col2, col3 = st.columns(3)
 
         with col1:
@@ -482,19 +436,36 @@ def main():
                         'probabilities'].items():
                         st.write(f"- {condition}: {prob}")
 
-        with col2:
-            st.subheader(t("anthropic_analysis"))
-            if ai_analysis and ai_analysis.get('anthropic_analysis'):
-                st.markdown(ai_analysis['anthropic_analysis'])
-            else:
-                st.info(t("anthropic_unavailable"))
+        # with col2:
+        #     st.subheader("Additional Analysis")
+        #
+        #     # Original ML Analysis
+        #     # if ai_analysis and ai_analysis.get('ml_analysis'):
+        #     #     st.markdown(ai_analysis['ml_analysis'])
+        #     # else:
+        #     #     st.info("ML analysis unavailable")
+        #
+        #     # New Neural Networks Analysis
+        #     with st.expander("Нейросетевой анализ проблем кожи", expanded=True):
+        #         problems_prediction = predict_skin_problems(skin_features)
+        #         st.write(f"**Тип анализа:** {problems_prediction['analysis_type']}")
+        #         st.write(f"**Состояние:** {problems_prediction['condition']}")
+        #         st.write(f"**Уверенность:** {problems_prediction['confidence']}")
+        #         st.write("**Детальный анализ проблем:**")
+        #         for problem in problems_prediction['detailed_problems']:
+        #             st.write(f"- {problem}")
 
-        with col3:
-            st.subheader(t("openai_analysis"))
-            if ai_analysis and ai_analysis.get('openai_analysis'):
-                st.markdown(ai_analysis['openai_analysis'])
-            else:
-                st.info(t("openai_unavailable"))
+        # with col3:
+        #     st.subheader("Recommendation Analysis")
+        #
+        #     with st.expander("Расширенные рекомендации по уходу", expanded=True):
+        #         care_prediction = predict_skin_care(skin_features)
+        #         st.write(f"**Тип анализа:** {care_prediction['analysis_type']}")
+        #         st.write(f"**Тип ухода:** {care_prediction['care_type']}")
+        #         st.write(f"**Уверенность:** {care_prediction['confidence']}")
+        #         st.write("**Рекомендации по уходу:**")
+        #         for rec in care_prediction['recommendations']:
+        #             st.write(f"- {rec}")
 
         # Handle publish button functionality
         publish_button = st.button("Publish")
@@ -522,69 +493,6 @@ def main():
                 )
             else:
                 st.warning("Please log in to publish your analysis.")
-
-        # Detailed Problem Area Analysis
-        # st.header(t("comprehensive_analysis"))
-        # if problem_areas:
-        #     problem_tabs = st.tabs([
-        #         f"{area['type']} {i + 1}"
-        #         for i, area in enumerate(problem_areas)
-        #     ])
-        #
-        #     for i, (tab, area) in enumerate(zip(problem_tabs, problem_areas)):
-        #         with tab:
-        #             col1, col2 = st.columns([1, 2])
-        #
-        #             with col1:
-        #                 # Extract the region of interest
-        #                 x, y, w, h = area['bbox']
-        #                 x, y, w, h = max(0, x), max(0, y), w, h
-        #
-        #                 # Check if coordinates are valid
-        #                 x_end = min(x + w, processed_image.shape[1])
-        #                 y_end = min(y + h, processed_image.shape[0])
-        #
-        #                 # Extract and display the region of interest
-        #                 if x < x_end and y < y_end:
-        #                     roi = processed_image[y:y_end, x:x_end]
-        #                     if roi.size > 0:  # Make sure the ROI is not empty
-        #                         # Increase quality by using full image size
-        #                         st.image(roi,
-        #                                  use_container_width=True,
-        #                                  clamp=True)
-        #
-        #             with col2:
-        #                 st.markdown(f"### {area['type']} {t('details')}")
-        #                 st.markdown(f"**{t('area_severity')}** {area['severity']}")
-        #                 st.markdown(f"**{t('area_size')}** {area['size']} pixels")
-        #                 st.markdown(f"**{t('area_description')}**")
-        #                 st.markdown(area['description'])
-        #
-        #                 # Add recommendations based on the area type
-        #                 st.markdown(f"### {t('recommended_actions')}")
-        #                 if "Spot" in area['type']:
-        #                     st.markdown(
-        #                         f"- {t('rec_niacinamide')}"
-        #                     )
-        #                     st.markdown(
-        #                         f"- {t('rec_sunscreen')}"
-        #                     )
-        #                 elif "Redness" in area['type']:
-        #                     st.markdown(
-        #                         f"- {t('rec_centella')}"
-        #                     )
-        #                     st.markdown(
-        #                         f"- {t('rec_avoid_hot')}"
-        #                     )
-        #                 elif "Texture" in area['type']:
-        #                     st.markdown(
-        #                         f"- {t('rec_gentle_exfoliation')}"
-        #                     )
-        #                     st.markdown(
-        #                         f"- {t('rec_retinol')}"
-        #                     )
-        # else:
-        #     st.info(t("no_problem_areas"))
 
         # Display Detected characteristics with expanded metrics and descriptions
         st.subheader(t("skin_metrics"))
@@ -914,7 +822,7 @@ def main():
                                                   search_radius, all_doctors)
 
         # Display radius information
-        st.info(t("doctors_in_radius").format(radius=search_radius))
+        st.info(t("doctorsin_radius").format(radius=search_radius))
 
         if not doctors_in_radius:
             st.warning(

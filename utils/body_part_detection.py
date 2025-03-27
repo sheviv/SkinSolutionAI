@@ -8,7 +8,7 @@ import torch
 torch.classes.__path__ = []
 
 # Initialize YOLO model
-# yolo_model = YOLO('yolov8x.pt')
+yolo_model = YOLO('yolov8x.pt')
 
 # Define body parts and facial features classes
 BODY_PARTS = {

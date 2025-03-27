@@ -353,5 +353,161 @@ def predict_child_skin_condition(features):
         }
 
 
+def generate_skin_problems_data():
+    """Generate training data for skin problems analysis."""
+    np.random.seed(44)
+    n_samples = 2000
+
+    features = np.random.rand(n_samples, 6) * 100  # Generate random features
+
+    # Generate labels based on feature combinations
+    labels = []
+    for features_row in features:
+        if features_row[3] > 70:  # High number of spots
+            labels.append("Acne-Related Issues")
+        elif features_row[4] > 65:  # High redness
+            labels.append("Sensitive Skin Issues")
+        elif features_row[0] < 40:  # Low tone uniformity
+            labels.append("Hyperpigmentation")
+        elif features_row[2] > 60:  # High texture
+            labels.append("Texture Issues")
+        else:
+            labels.append("Normal Skin")
+
+    return features, np.array(labels)
+
+
+def generate_skin_care_data():
+    """Generate training data for skin care recommendations."""
+    np.random.seed(45)
+    n_samples = 2000
+
+    features = np.random.rand(n_samples, 6) * 100
+
+    # Generate care type labels based on features
+    labels = []
+    for features_row in features:
+        if features_row[1] < 50:  # Low brightness
+            labels.append("Intensive Care")
+        elif features_row[4] > 60:  # High redness
+            labels.append("Calming Care")
+        elif features_row[3] > 50:  # Moderate to high spots
+            labels.append("Treatment Care")
+        else:
+            labels.append("Maintenance Care")
+
+    return features, np.array(labels)
+
+
+# Neural network for detailed skin problems analysis
+skin_problems_model = MLPClassifier(
+    hidden_layer_sizes=(150, 100, 50),
+    activation='relu',
+    solver='adam',
+    alpha=0.001,
+    batch_size=32,
+    learning_rate='adaptive',
+    max_iter=1000,
+    random_state=42
+)
+
+# Neural network for extended skin care recommendations
+skin_care_model = MLPClassifier(
+    hidden_layer_sizes=(200, 150, 100),
+    activation='relu',
+    solver='adam',
+    alpha=0.0005,
+    batch_size=32,
+    learning_rate='adaptive',
+    max_iter=1000,
+    random_state=42
+)
+
+# Train models on initialization
+X_problems, y_problems = generate_skin_problems_data()
+skin_problems_model.fit(X_problems, y_problems)
+
+X_care, y_care = generate_skin_care_data()
+skin_care_model.fit(X_care, y_care)
+
+
+def predict_skin_problems(features):
+    """Predict detailed skin problems using neural network."""
+    try:
+        # Convert features to numerical values
+        feature_values = np.array([
+            float(features["Tone Uniformity"]),
+            float(features["Brightness"]),
+            float(features["Texture"]),
+            float(features["Spots Detected"]),
+            float(features["Redness"]),
+            float(features["Pigmentation"])
+        ]).reshape(1, -1)
+
+        # Make prediction
+        probabilities = skin_problems_model.predict_proba(feature_values)[0]
+        confidence = max(probabilities) * 100
+        prediction = skin_problems_model.predict(feature_values)[0]
+
+        return {
+            'condition': prediction,
+            'confidence': f"{confidence:.1f}%",
+            'analysis_type': 'Deep Neural Analysis',
+            'detailed_problems': [
+                'Dehydration Level',
+                'Barrier Damage',
+                'Sensitivity Level',
+                'Environmental Damage'
+            ]
+        }
+    except Exception as e:
+        print(f"Skin problems prediction error: {str(e)}")
+        return {
+            'condition': "Analysis Unavailable",
+            'confidence': "N/A",
+            'analysis_type': 'Deep Neural Analysis',
+            'detailed_problems': []
+        }
+
+
+def predict_skin_care(features):
+    """Predict extended skin care recommendations."""
+    try:
+        # Convert features to numerical values
+        feature_values = np.array([
+            float(features["Tone Uniformity"]),
+            float(features["Brightness"]),
+            float(features["Texture"]),
+            float(features["Spots Detected"]),
+            float(features["Redness"]),
+            float(features["Pigmentation"])
+        ]).reshape(1, -1)
+
+        # Make prediction
+        probabilities = skin_care_model.predict_proba(feature_values)[0]
+        confidence = max(probabilities) * 100
+        prediction = skin_care_model.predict(feature_values)[0]
+
+        return {
+            'care_type': prediction,
+            'confidence': f"{confidence:.1f}%",
+            'analysis_type': 'Advanced Care Analysis',
+            'recommendations': [
+                'Active Ingredients',
+                'Treatment Frequency',
+                'Environmental Protection',
+                'Lifestyle Adjustments'
+            ]
+        }
+    except Exception as e:
+        print(f"Skin care prediction error: {str(e)}")
+        return {
+            'care_type': "Analysis Unavailable",
+            'confidence': "N/A",
+            'analysis_type': 'Advanced Care Analysis',
+            'recommendations': []
+        }
+
+
 # Initialize models on module load
 specialized_models = load_specialized_models()
